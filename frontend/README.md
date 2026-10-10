@@ -1,9 +1,11 @@
 # Frontend KitListo
 
-Requiere Node 24. Desde esta carpeta:
+Requiere Node 24 y pnpm (`winget install pnpm.pnpm`). Desde esta carpeta:
 
-    npm ci
-    npm run dev
+    pnpm install
+    pnpm dev
+
+pnpm usa versiones exactas y solo instala versiones publicadas hace más de 7 días, sin ejecutar scripts de instalación (`pnpm-workspace.yaml`).
 
 Abre https://localhost:5173. En celular usa https://<IP-de-la-laptop>:5173, acepta el certificado y permite la cámara. Ambos equipos deben compartir red.
 
@@ -34,8 +36,8 @@ Para conteos, cero significa cero unidades y una casilla vacía no modifica la p
 
 ## Validación
 
-    npm test
-    npm run build
+    pnpm test
+    pnpm build
 
 Las pruebas cubren la orden vieja de INSERTO con dos apartadas frente a la orden de demo con seis, prioridad de selección explícita, reservas agregadas, ambigüedad, saldo, conteo cero, kits, eventos selectivos y cuerpos/errores de la API.
 
@@ -46,4 +48,4 @@ Prueba con backend real:
 4. Con reserva antigua de dos y disponible global de dos, elegir la orden antigua y pedir seis debe bloquear el botón. La orden demo con seis sí permite retirar si hay saldo en la ubicación.
 5. Confirma que la orden actualiza issued/reserved. Revisa transferencias, conteos y políticas en un entorno de prueba.
 
-Para producción sirve dist/ con fallback a index.html y un proxy /api al backend que quite el prefijo y permita SSE. npm run preview solo previsualiza el build; no configura ese proxy.
+Para producción sirve dist/ con fallback a index.html y un proxy /api al backend que quite el prefijo y permita SSE. pnpm preview solo previsualiza el build; no configura ese proxy.

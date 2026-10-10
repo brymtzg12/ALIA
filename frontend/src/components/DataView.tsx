@@ -7,9 +7,12 @@ const statuses: Record<string, [string, string]> = {
   unidentified: ['Sin identificar', 'gray'], unknown_qty: ['Cantidad pendiente', 'gray'],
   receipt: ['Entrada', 'green'], issue: ['Salida', 'blue'], transfer_out: ['Transferencia de salida', 'orange'],
   transfer_in: ['Transferencia de entrada', 'cyan'], adjustment: ['Ajuste', 'violet'],
-  received: ['Recibido', 'blue'], inspection: ['Inspección', 'orange'], disassembly: ['Desarmado', 'orange'],
-  repair: ['Reparación', 'blue'], assembly: ['Armado', 'cyan'], testing: ['Pruebas', 'violet'],
-  final_release: ['Liberado', 'green'], shortage: ['Por faltante', 'red'], below_min: ['Bajo mínimo', 'orange'],
+  // Etapas de la orden según el contrato (common.schema.json, $defs.stage).
+  awaiting_quick_inspection: ['Espera diagnóstico rápido', 'gray'], quick_inspection: ['Diagnóstico rápido', 'orange'],
+  awaiting_full_inspection: ['Espera inspección completa', 'gray'], full_inspection: ['Inspección completa', 'orange'],
+  cleaning: ['Limpieza', 'blue'], assembly: ['Armado', 'cyan'], run_in: ['Asentamiento', 'violet'],
+  final_assembly: ['Armado final', 'cyan'], final_release: ['Liberado', 'green'],
+  shortage: ['Por faltante', 'red'], below_min: ['Bajo mínimo', 'orange'],
   shortage_and_min: ['Faltante y bajo mínimo', 'red'], ok: ['Operativo', 'green'],
 };
 export function StatusBadge({ value }: { value: unknown }) {

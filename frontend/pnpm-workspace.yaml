@@ -1,0 +1,7 @@
+# Configuración de pnpm para endurecer la cadena de suministro (igual que el backend).
+# - Solo se instalan versiones publicadas hace más de 7 días (10080 minutos).
+# - Versiones exactas, sin rangos ^ ni ~.
+# - Los scripts de instalación (postinstall, etc.) quedan bloqueados.
+minimumReleaseAge: 10080
+saveExact: true
+strictDepBuilds: true

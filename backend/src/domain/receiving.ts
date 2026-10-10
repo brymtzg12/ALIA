@@ -120,6 +120,7 @@ export async function registerReceipt(db: Db, r: ReceiptInput): Promise<Movement
   });
   if (!movement) return null;
 
+  const part = await db.query(`SELECT name, sku FROM parts WHERE part_id = $1`, [r.partId]);
   await emit(db, 'stock.received', `part:${r.partId}`, {
     part_id: r.partId,
     location_id: locationId,
@@ -128,6 +129,8 @@ export async function registerReceipt(db: Db, r: ReceiptInput): Promise<Movement
     currency: r.currency,
     purchase_line_id: r.purchaseLineId,
     // Extras (permitidos por el contrato):
+    part_name: part.rows[0]?.name ?? null,
+    sku: part.rows[0]?.sku ?? null,
     movement_id: movement.movement_id,
     received_at: movement.occurred_at,
     work_order_code: r.workOrderCode,

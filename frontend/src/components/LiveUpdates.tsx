@@ -31,7 +31,7 @@ export default function LiveUpdates() {
           if (event.event_id) { seen.add(event.event_id); if (seen.size > 500) seen.delete(seen.values().next().value!); }
           schedule(event);
           if (event.event_type === 'stock.shortage_detected') notifications.show({ title: 'Faltante detectado', message: String(event.data.name ?? 'Pieza') + ' · Orden ' + String(event.data.work_order_code ?? event.key) + ' · ' + String(event.data.missing_quantity ?? 'cantidad pendiente'), color: 'red' });
-          if (event.event_type === 'stock.received') notifications.show({ title: 'Entrada de material', message: 'Pieza ' + String(event.data.part_id) + ': ' + String(event.data.quantity) + ' unidades recibidas.', color: 'green' });
+          if (event.event_type === 'stock.received') notifications.show({ title: 'Entrada de material', message: String(event.data.part_name ?? 'Pieza ' + String(event.data.part_id)) + ': ' + String(event.data.quantity) + ' unidades recibidas.', color: 'green' });
         }
       } catch { /* Los latidos no cambian las consultas. */ }
     };

@@ -32,10 +32,11 @@ docker compose run --rm contract-tests --api http://host.docker.internal:8000
 ```
 
 ## Frontend
-Desde la rama frontend:
-    cd frontend
-    npm ci
-    npm run dev
+```bash
+cd frontend
+pnpm install
+pnpm dev                  # https://localhost:5173
+```
 Abre https://localhost:5173 con el backend encendido en el puerto 8000.
 Para un celular, usa https://<IP-de-la-laptop>:5173 en la misma red.
 Consulta frontend/README.md para pantallas, validación y prueba de integración.

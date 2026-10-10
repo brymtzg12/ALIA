@@ -28,7 +28,9 @@ export function Pronostico() {
   const [selected, setSelected] = useState<string | null>(null);
   const query = useApi<List & { open_orders: number }>('/forecast/open-orders');
   const models = useApi<List>('/forecast/models', true, false);
-  const model = selected ?? (models.data?.items[0] ? String(models.data.items[0].model_id) : null);
+  // Por defecto, el modelo con más órdenes (el primero por nombre podría no tener historial).
+  const busiest = [...(models.data?.items ?? [])].sort((a, b) => Number(b.work_orders ?? 0) - Number(a.work_orders ?? 0))[0];
+  const model = selected ?? (busiest ? String(busiest.model_id) : null);
   const forecast = useApi<{ lines: Row[]; orders_with_approval: number }>('/forecast/models/' + model, !!model, false);
   return <Stack><Title order={2}>Pronóstico de demanda</Title><Title order={3}>Órdenes sin inspección aprobada</Title><QueryState query={query} />{query.data && <>{query.data.open_orders === 0 ? <Alert color="blue">No hay órdenes abiertas sin inspección aprobada. Consulta abajo la demanda histórica por modelo.</Alert> : <Text>Órdenes consideradas: {query.data.open_orders}</Text>}{query.data.items.length > 0 && <DataTable rows={query.data.items} columns={[['part_id', 'Pieza'], ['name', 'Nombre'], ['expected_quantity', 'Demanda esperada'], ['available', 'Disponible'], ['gap', 'Brecha'], ['explanation', 'Base del cálculo']]} />}</>}
     <Group justify="space-between"><Title order={3}>Histórico por modelo</Title><Button variant="light" loading={models.isFetching || forecast.isFetching} onClick={() => { void models.refetch(); if (model) void forecast.refetch(); }}>Actualizar histórico</Button></Group><Text c="dimmed">Probabilidad de compra y cantidad esperada a partir de inspecciones aprobadas. Es una estimación, no una reserva.</Text><QueryState query={models} /><Select searchable label="Modelo" placeholder="Elige un modelo" data={(models.data?.items ?? []).map(row => ({ value: String(row.model_id), label: String(row.model_name) + ' · ' + String(row.brand ?? '') }))} value={model} onChange={setSelected} allowDeselect={false} />
