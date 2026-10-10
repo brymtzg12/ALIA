@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { MantineProvider, Container, Title, Text, Button } from '@mantine/core';
+import { MantineProvider, Container, Stack, Title, Text, Button } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createBrowserRouter, RouterProvider, Navigate, Link } from 'react-router-dom';
@@ -8,6 +8,7 @@ import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import AppLayout from './components/AppLayout';
 import LiveUpdates from './components/LiveUpdates';
+import { theme, resolver } from './theme';
 import AlmacenScreen from './pages/Almacen';
 import { Ordenes, Materiales, Pieza, Salud, Pronostico } from './pages/Consultas';
 import { Piso, Recepciones } from './pages/Operaciones';
@@ -31,9 +32,9 @@ const router = createBrowserRouter([{
     { path: 'valuacion', element: <Valuacion /> },
     { path: 'rotacion', element: <Rotacion /> },
     { path: 'politicas', element: <Politicas /> },
-    { path: '*', element: <Container><Title>Página no encontrada</Title><Text>Revisa la dirección.</Text><Button component={Link} to="/almacen">Volver al almacén</Button></Container> },
+    { path: '*', element: <Container size="sm" px={0} py="xl"><Stack gap="md" align="flex-start"><Title order={1}>Página no encontrada</Title><Text c="dimmed">Revisa la dirección.</Text><Button component={Link} to="/almacen" size="md">Volver al almacén</Button></Stack></Container> },
   ],
 }]);
 ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode><QueryClientProvider client={queryClient}><MantineProvider><Notifications /><LiveUpdates /><RouterProvider router={router} /></MantineProvider></QueryClientProvider></React.StrictMode>
+  <React.StrictMode><QueryClientProvider client={queryClient}><MantineProvider theme={theme} cssVariablesResolver={resolver} defaultColorScheme="auto"><Notifications /><LiveUpdates /><RouterProvider router={router} /></MantineProvider></QueryClientProvider></React.StrictMode>
 );

@@ -1,0 +1,22 @@
+.frame {
+  border: 1px solid var(--kl-line);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--kl-surface);
+}
+
+.num {
+  text-align: right;
+  font-family: var(--mantine-font-family-monospace);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.code {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.retry {
+  align-self: flex-start;
+}

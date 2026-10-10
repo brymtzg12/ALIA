@@ -1,4 +1,4 @@
-# Frontend KitListo
+# Frontend ALIA
 
 Requiere Node 24 y pnpm (`winget install pnpm.pnpm`). Desde esta carpeta:
 
@@ -8,6 +8,8 @@ Requiere Node 24 y pnpm (`winget install pnpm.pnpm`). Desde esta carpeta:
 pnpm usa versiones exactas y solo instala versiones publicadas hace más de 7 días, sin ejecutar scripts de instalación (`pnpm-workspace.yaml`).
 
 Abre https://localhost:5173. En celular usa https://<IP-de-la-laptop>:5173, acepta el certificado y permite la cámara. Ambos equipos deben compartir red.
+
+Para el celular o una demostración conviene la versión compilada: `pnpm build` y luego `pnpm preview --host --port 4173`, y abrir https://<IP-de-la-laptop>:4173. Carga más rápido por hotspot y evita la pantalla negra por caché que puede dejar el servidor de desarrollo al reiniciarse. Repite `pnpm build` cada vez que cambie el código. La IP cambia cuando la laptop cambia de red (`ipconfig`).
 
 El backend debe estar encendido en http://localhost:8000. Vite dirige /api al backend, incluido /api/stream. La aplicación consulta datos reales. Los eventos SSE se agrupan durante 400 ms e invalidan las consultas afectadas; las vistas operativas también refrescan cada 15 segundos para cambios sin evento.
 
@@ -48,4 +50,4 @@ Prueba con backend real:
 4. Con reserva antigua de dos y disponible global de dos, elegir la orden antigua y pedir seis debe bloquear el botón. La orden demo con seis sí permite retirar si hay saldo en la ubicación.
 5. Confirma que la orden actualiza issued/reserved. Revisa transferencias, conteos y políticas en un entorno de prueba.
 
-Para producción sirve dist/ con fallback a index.html y un proxy /api al backend que quite el prefijo y permita SSE. pnpm preview solo previsualiza el build; no configura ese proxy.
+Para producción sirve dist/ con fallback a index.html y un proxy /api al backend que quite el prefijo y permita SSE. pnpm preview sí reutiliza la configuración de vite.config.ts (HTTPS local y proxy /api, incluido el SSE), pero es para pruebas locales y demostraciones, no para producción.

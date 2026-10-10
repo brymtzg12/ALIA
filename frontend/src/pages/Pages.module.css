@@ -1,0 +1,80 @@
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--mantine-spacing-md) var(--mantine-spacing-xl);
+  padding: var(--mantine-spacing-md);
+  background: var(--kl-surface-sunken);
+  border: 1px solid var(--kl-line);
+  border-radius: var(--mantine-radius-sm);
+}
+
+.search {
+  flex: 1 1 260px;
+  max-width: 420px;
+}
+
+.narrowInput {
+  max-width: 360px;
+}
+
+.kit {
+  border-inline-start: 4px solid var(--mantine-color-orange-6);
+}
+
+.kitDone {
+  border-inline-start: 4px solid var(--mantine-color-green-6);
+}
+
+.receiptHead {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.partNumber {
+  font-family: var(--mantine-font-family-monospace);
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+
+.meta {
+  font-family: var(--mantine-font-family-monospace);
+  font-size: var(--mantine-font-size-sm);
+  color: var(--mantine-color-dimmed);
+}
+
+.count {
+  font-family: var(--mantine-font-family-monospace);
+  font-variant-numeric: tabular-nums;
+}
+
+.prose {
+  max-width: 70ch;
+}
+
+.grow {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.frame {
+  border: 1px solid var(--kl-line);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--kl-surface);
+}
+
+.editList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--mantine-spacing-xs);
+}
+
+.codeButton {
+  font-family: var(--mantine-font-family-monospace);
+  font-weight: 500;
+}
+
+.explanation {
+  min-width: 280px;
+}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Stack } from '@mantine/core';
 import { BrowserMultiFormatReader, type IScannerControls } from '@zxing/browser';
+import classes from './FloorControls.module.css';
 export default function Scanner({ onCode }: { onCode: (code: string) => void }) {
   const video = useRef<HTMLVideoElement>(null);
   const callback = useRef(onCode);
@@ -23,5 +24,5 @@ export default function Scanner({ onCode }: { onCode: (code: string) => void }) 
     });
     return () => { disposed = true; controls?.stop(); };
   }, [active]);
-  return <Stack>{error && <Alert color="red">{error}</Alert>}<Button variant="light" onClick={() => { setError(''); setActive(value => !value); }}>{active ? 'Cerrar cámara' : 'Escanear con cámara'}</Button>{active && <video ref={video} style={{ width: '100%', maxWidth: 480 }} muted playsInline />}</Stack>;
+  return <Stack>{error && <Alert color="red">{error}</Alert>}<Button variant="light" size="lg" onClick={() => { setError(''); setActive(value => !value); }}>{active ? 'Cerrar cámara' : 'Escanear con cámara'}</Button>{active && <video ref={video} className={classes.video} muted playsInline />}</Stack>;
 }

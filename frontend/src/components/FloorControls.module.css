@@ -1,0 +1,38 @@
+.floorNav {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px;
+  background: var(--kl-surface-sunken);
+  border: 1px solid var(--kl-line);
+  border-radius: var(--mantine-radius-sm);
+  max-width: 560px;
+}
+
+.floorNavItem {
+  min-width: 0;
+  padding-inline: var(--mantine-spacing-xs);
+}
+
+.scanRow {
+  flex-wrap: wrap;
+}
+
+.grow {
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.codeInput {
+  font-family: var(--mantine-font-family-monospace);
+  letter-spacing: 0.04em;
+}
+
+.video {
+  display: block;
+  width: 100%;
+  max-width: 480px;
+  border: 2px solid var(--mantine-color-text);
+  border-radius: var(--mantine-radius-sm);
+  background: var(--kl-surface-sunken);
+}
