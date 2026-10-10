@@ -10,7 +10,7 @@ ALIA lleva el inventario del taller de Roceel como un **libro mayor de movimient
 2. Se compara contra el SKU: primero exacto normalizado (mayúsculas, sin espacios en los extremos) y, si no hay, compacto (además sin espacios internos, guiones, puntos, comas ni diagonales).
 3. Si el SKU es compartido por varias piezas, se elige la única cuyo nombre es igual a la descripción.
 4. Sin número de parte (`S/N …`) o sin coincidencia, la descripción se compara contra el SKU y luego contra el nombre.
-5. Si no queda una sola pieza, va a **revisión manual** con candidatos sugeridos. Al resolverla, entra a U-100 y surte primero el faltante de su orden.
+5. Si no queda una sola pieza (número de proveedor que no existe en el catálogo, o SKU compartido sin nombre que lo distinga), va a **revisión manual** con candidatos sugeridos por parecido de SKU y descripción. Al resolverla, entra a U-100 y surte primero el faltante de su orden.
 
 Las compras para cliente no entran al inventario. Si una compra no coincide mientras el catálogo aún se carga, se estaciona y se reintenta: su pieza puede venir en camino por otro tópico.
 

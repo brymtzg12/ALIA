@@ -53,12 +53,26 @@ docker compose run --rm contract-tests --api http://host.docker.internal:8000
 | Detener ALIA conservando sus datos | `docker compose stop` (y `docker compose start` para volver) |
 | Reconstruir la base desde cero | `docker compose down -v` y luego `docker compose up -d` |
 | Detener el kit | `cd hackathon-inventario-kit && docker compose stop` |
+| Dejar todo limpio después de las pruebas de contrato | `docker compose stop backend`, luego en `hackathon-inventario-kit/`: `RESET=1 SPEED=0 docker compose up -d --force-recreate simulator` (espera `replay terminado: 1742 eventos` en `docker compose logs simulator`), y de vuelta en la raíz: `docker compose down -v` y `docker compose up -d` |
 
+> Solo debe haber **un** servicio de inventario conectado al broker: no corras a la vez ALIA en Docker y el
+> modo desarrollo (`pnpm dev`), o las pruebas de contrato verán eventos de los dos.
+>
 > Usa `stop` y no `down` en el kit: Redpanda guarda los tópicos en un volumen sin nombre que se
 > pierde al borrar el contenedor.
 
 Las respuestas a cómo relacionamos compras, cómo manejamos kits, cómo evitamos reservas dobles y cómo
 garantizamos idempotencia están en **[DECISIONES.md](DECISIONES.md)** (una página).
+
+## Extras del nivel avanzado
+
+| Extra pedido | Dónde verlo en ALIA |
+|---|---|
+| Pronóstico de demanda por modelo | Pantalla **Pronóstico** (`/pronostico`) · `GET /forecast/models/:id` y `GET /forecast/open-orders` |
+| Valuación a costo promedio (MXN y USD) | Pantalla **Valuación** (`/valuacion`) · `GET /valuation`. USD se convierte con un tipo de cambio fijo (`USD_MXN`) |
+| Tablero de rotación | Pantalla **Rotación** (`/rotacion`): piezas críticas y sin movimiento · `GET /rotation` |
+| Observabilidad del consumidor | Pantalla **Salud del sistema** (`/salud`) · `GET /health`: lag por tópico, procesados, errores, estacionados y DLQ |
+| Mínimos y máximos | Pantalla **Políticas** (`/politicas`), con recomendación por uso histórico |
 
 ## Recursos de Roceel
 
@@ -319,7 +333,8 @@ o un kit queda completo. Más detalle en [`frontend/README.md`](frontend/README.
 | `docker compose down` | Apaga el kit |
 
 > Las pruebas de contrato dejan datos de prueba ("PIEZA DE PRUEBA", "MODELO 640768"). Antes de
-> una demostración, corre `pnpm demo:reset --snapshot` en `backend/` y no vuelvas a correr las pruebas.
+> una demostración, corre `pnpm demo:reset --snapshot` en `backend/` (modo desarrollo) o sigue
+> *Dejar todo limpio* en [Levantar ALIA con un comando](#levantar-alia-con-un-comando) (modo Docker).
 
 ## API
 
