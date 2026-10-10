@@ -45,9 +45,14 @@ export function Piso() {
   const selectedOrder = selectOrder(order, reserves, quantityOverride != null && isInteger(quantityOverride) ? Number(quantityOverride) : undefined);
   const ownReserved = reserves.get(selectedOrder) ?? 0;
   const quantity = quantityOverride ?? (ownReserved || 1);
-  const here = Number(availability.data?.locations.find(row => String(row.location_id) === location)?.on_hand ?? 0);
+  // Sin ubicación escaneada, se sugiere la única ubicación con existencia de la pieza; la sugerencia no se vuelve explícita.
+  const stocked = (availability.data?.locations ?? []).filter(row => Number(row.on_hand) > 0);
+  const suggestedLocation = !location && isInteger(part) && stocked.length === 1 ? String(stocked[0].location_id) : '';
+  const effectiveLocation = location || suggestedLocation;
+  const locationCode = String(locations.data?.items.find(row => String(row.location_id) === effectiveLocation)?.code ?? '');
+  const here = Number(availability.data?.locations.find(row => String(row.location_id) === effectiveLocation)?.on_hand ?? 0);
   const limit = withdrawalLimit(here, availability.data?.available ?? 0, ownReserved);
-  const valid = isInteger(location) && isInteger(part) && isInteger(quantity) && !!selectedOrder && !!operator.trim() && Number(quantity) <= limit
+  const valid = isInteger(effectiveLocation) && isInteger(part) && isInteger(quantity) && !!selectedOrder && !!operator.trim() && Number(quantity) <= limit
     && availability.isSuccess && reservations.isSuccess && !availability.isFetching && !reservations.isFetching;
   const issue = useMutation({
     mutationFn: (body: { work_order_code: string; part_id: number; location_id: number; quantity: number; issued_by: string }) => request('/issues', body),
@@ -77,7 +82,8 @@ export function Piso() {
     {notice && <Alert color="orange">{notice}</Alert>}
     </Section>
     <Section step={2} title="Ubicación" tone="panel">
-    <QueryState query={locations} /><Select searchable size="lg" label="Ubicación" disabled={issue.isPending} data={(locations.data?.items ?? []).filter(row => row.active !== false).map(row => ({ value: String(row.location_id), label: String(row.code) + ' · ' + String(row.name) }))} value={location || null} onChange={value => setLocation(value ?? '')} />
+    <QueryState query={locations} /><Select searchable size="lg" label="Ubicación" disabled={issue.isPending} data={(locations.data?.items ?? []).filter(row => row.active !== false).map(row => ({ value: String(row.location_id), label: String(row.code) + ' · ' + String(row.name) }))} value={effectiveLocation || null} onChange={value => setLocation(value ?? '')} />
+    {suggestedLocation && <Alert color="blue">Ubicación sugerida: {locationCode}, la única con existencia de esta pieza. Escanea otra si vas a retirar de otro lugar.</Alert>}
     </Section>
     <Section step={3} title="Pieza" tone="panel">
     {candidates.length > 1 && <Select size="lg" label="Seleccionar pieza" disabled={issue.isPending} data={candidates.map(row => ({ value: String(row.part_id), label: String(row.name) + ' (ID ' + row.part_id + ')' }))} value={part || null} onChange={value => choosePart(value ?? '')} />}
@@ -92,13 +98,15 @@ export function Piso() {
     </Section>
     <Section step={5} title="Cantidad" tone="panel">
     <NumberInput size="lg" label="Cantidad a retirar" disabled={issue.isPending} min={1} allowDecimal={false} value={quantity} onChange={value => setQuantity(value)} />
-    {availability.isSuccess && location && <SimpleGrid cols={2} spacing="sm"><Stat label="Existencia en ubicación" value={here} /><Stat label="Máximo retirable para esta orden" value={limit} /></SimpleGrid>}
-    {availability.isSuccess && isInteger(quantity) && Number(quantity) > limit && <Alert color="red">No alcanza el saldo para esta orden y ubicación. Revisa la orden, la cantidad o las reservas.</Alert>}
+    {availability.isSuccess && effectiveLocation && <SimpleGrid cols={2} spacing="sm"><Stat label="Existencia en ubicación" value={here} /><Stat label="Máximo retirable para esta orden" value={limit} /></SimpleGrid>}
+    {availability.isSuccess && isInteger(part) && !effectiveLocation && <Alert color="orange">Escanea o elige la ubicación de donde vas a retirar.</Alert>}
+    {availability.isSuccess && effectiveLocation && here === 0 && <Alert color="orange">No hay existencia de esta pieza en {locationCode}.{stocked.length > 0 && <> Hay en: {stocked.map(row => String(row.code) + ' (' + String(row.on_hand) + ')').join(', ')}.</>}</Alert>}
+    {availability.isSuccess && effectiveLocation && here > 0 && isInteger(quantity) && Number(quantity) > limit && <Alert color="red">No alcanza el saldo para esta orden y ubicación. Revisa la orden, la cantidad o las reservas.</Alert>}
     </Section>
     <Section step={6} title="Operador" tone="panel">
     <OperatorPicker value={operator} onChange={setOperator} />
     </Section>
     </div>
-    <ConfirmBar><Button size="xl" fullWidth classNames={{ root: floor.confirm, label: floor.confirmLabel }} disabled={!valid} loading={issue.isPending} onClick={() => issue.mutate({ work_order_code: selectedOrder, part_id: Number(part), location_id: Number(location), quantity: Number(quantity), issued_by: operator.trim() })}>Confirmar retiro de {quantity} para {selectedOrder || 'una orden'}</Button>{issue.error && <Alert color="red">{issue.error.message}</Alert>}</ConfirmBar>
+    <ConfirmBar><Button size="xl" fullWidth classNames={{ root: floor.confirm, label: floor.confirmLabel }} disabled={!valid} loading={issue.isPending} onClick={() => issue.mutate({ work_order_code: selectedOrder, part_id: Number(part), location_id: Number(effectiveLocation), quantity: Number(quantity), issued_by: operator.trim() })}>Confirmar retiro de {quantity} para {selectedOrder || 'una orden'}</Button>{issue.error && <Alert color="red">{issue.error.message}</Alert>}</ConfirmBar>
   </>;
 }
