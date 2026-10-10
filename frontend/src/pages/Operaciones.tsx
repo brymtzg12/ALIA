@@ -63,7 +63,7 @@ export function Piso() {
     <div className={floor.steps}>
     <Section step={1} title="Escanear" tone="panel">
     {lastIssue && <Alert color="green" title="Última salida registrada">{lastIssue.quantity} × pieza {lastIssue.part_id} → orden <Code>{lastIssue.work_order_code}</Code></Alert>}
-    <ScanField key={scanKey} disabled={issue.isPending} onResult={result => {
+    <ScanField resetSignal={scanKey} disabled={issue.isPending} onResult={result => {
       setNotice(''); issue.reset();
       if (result.kind === 'location' && result.location) setLocation(String(result.location.location_id));
       else if (result.kind === 'work_order' && result.work_order) {

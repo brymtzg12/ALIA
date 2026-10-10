@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Alert, Button, Group, Loader, Select, Stack, TextInput } from '@mantine/core';
 import { useMutation } from '@tanstack/react-query';
 import { Link, useLocation } from 'react-router-dom';
@@ -10,13 +10,14 @@ export function FloorNav() {
   const { pathname } = useLocation();
   return <nav aria-label="Modos de piso" className={classes.floorNav}>{([['/piso/retirar', 'Retirar'], ['/piso/transferir', 'Transferir'], ['/piso/contar', 'Contar']] as const).map(([to, label]) => <Button key={to} component={Link} to={to} size="lg" variant={pathname === to ? 'filled' : 'default'} aria-current={pathname === to ? 'page' : undefined} className={classes.floorNavItem}>{label}</Button>)}</nav>;
 }
-export function ScanField({ onResult, disabled = false }: { onResult: (result: ScanResult) => void; disabled?: boolean }) {
+export function ScanField({ onResult, disabled = false, resetSignal = 0 }: { onResult: (result: ScanResult) => void; disabled?: boolean; resetSignal?: number }) {
   const [code, setCode] = useState('');
   const scan = useMutation({
     mutationFn: (raw: string) => request<ScanResult>('/scan?code=' + encodeURIComponent(raw.trim())),
     onSuccess: onResult,
   });
-  return <Stack gap="md"><Suspense fallback={<Loader size="sm" />}>{!disabled && !scan.isPending && <Scanner onCode={value => { setCode(value); scan.mutate(value); }} />}</Suspense><Group align="end" gap="sm" className={classes.scanRow}><TextInput label="Código de etiqueta" size="lg" className={classes.grow} classNames={{ input: classes.codeInput }} value={code} disabled={disabled || scan.isPending} onChange={e => setCode(e.currentTarget.value)} /><Button size="lg" disabled={disabled || !code.trim()} loading={scan.isPending} onClick={() => scan.mutate(code)}>Leer código</Button></Group>{scan.error && <Alert color="red">{scan.error.message}</Alert>}</Stack>;
+  useEffect(() => { if (resetSignal) { setCode(''); scan.reset(); } }, [resetSignal]);
+  return <Stack gap="md"><Suspense fallback={<Loader size="sm" />}><Scanner paused={disabled || scan.isPending} onCode={value => { setCode(value); scan.mutate(value); }} /></Suspense><Group align="end" gap="sm" className={classes.scanRow}><TextInput label="Código de etiqueta" size="lg" className={classes.grow} classNames={{ input: classes.codeInput }} value={code} disabled={disabled || scan.isPending} onChange={e => setCode(e.currentTarget.value)} /><Button size="lg" disabled={disabled || !code.trim()} loading={scan.isPending} onClick={() => scan.mutate(code)}>Leer código</Button></Group>{scan.error && <Alert color="red">{scan.error.message}</Alert>}</Stack>;
 }
 export function OperatorPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   const [names, setNames] = useState<string[]>(() => {

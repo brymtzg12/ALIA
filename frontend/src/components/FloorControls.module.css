@@ -36,3 +36,9 @@
   border-radius: var(--mantine-radius-sm);
   background: var(--kl-surface-sunken);
 }
+
+.lastRead {
+  font-family: var(--mantine-font-family-monospace);
+  font-weight: 600;
+  color: var(--mantine-color-text);
+}
