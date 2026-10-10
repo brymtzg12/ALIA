@@ -42,3 +42,23 @@
   font-weight: 600;
   color: var(--mantine-color-text);
 }
+
+.viewport {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  overflow: hidden;
+  border-radius: var(--mantine-radius-sm);
+}
+
+.viewfinder {
+  position: absolute;
+  left: 5%;
+  top: 32%;
+  width: 90%;
+  height: 36%;
+  border: 3px solid var(--kl-acento);
+  border-radius: var(--mantine-radius-sm);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+}

@@ -30,7 +30,7 @@ La orden escaneada o elegida tiene prioridad y se conserva al escanear otra piez
 
 Sin selección explícita, se sugiere la orden con la mayor reserva si es única. Si el operador captura una cantidad, solo se sugiere automáticamente una orden cuando es la única con reserva suficiente. Si hay ambigüedad, se exige elegir o escanear.
 
-Sin ubicación escaneada, si la pieza tiene existencia en una sola ubicación se sugiere esa ubicación (como la orden, la sugerencia no se vuelve explícita). Si la ubicación elegida no tiene la pieza, se indica dónde sí hay. La cámara se queda abierta para leer varias etiquetas seguidas.
+Sin ubicación escaneada, si la pieza tiene existencia en una sola ubicación se sugiere esa ubicación (como la orden, la sugerencia no se vuelve explícita). Si la ubicación elegida no tiene la pieza, se indica dónde sí hay. La cámara se queda abierta para leer varias etiquetas seguidas y solo lee lo que queda dentro del recuadro amarillo, para ignorar las etiquetas vecinas.
 
 La cantidad se prellena con la reserva de la orden seleccionada, salvo que el operador escriba otra. El máximo retirable es el menor entre la existencia en la ubicación y el disponible global más la reserva propia de la orden. El backend vuelve a validar todo al registrar.
 
