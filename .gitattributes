@@ -1,0 +1,9 @@
+# Saltos de línea LF en el repo y en las copias de trabajo (Docker y scripts los necesitan así).
+* text=auto eol=lf
+
+# Binarios: nunca convertir.
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
