@@ -33,7 +33,7 @@ function isNumericColumn(rows: Row[], key: string) {
 export function DataTable({ rows, columns }: { rows: Row[]; columns: [string, string][] }) {
   if (!rows.length) return <EmptyState>No hay registros.</EmptyState>;
   const numeric = new Set(columns.filter(([key]) => isNumericColumn(rows, key)).map(([key]) => key));
-  return <Table.ScrollContainer minWidth={650} className={classes.frame}><Table striped highlightOnHover><Table.Thead><Table.Tr>{columns.map(([key, title]) => <Table.Th key={key} className={numeric.has(key) ? classes.num : undefined}>{title}</Table.Th>)}</Table.Tr></Table.Thead><Table.Tbody>{rows.map((row, i) => <Table.Tr key={String(row.movement_id ?? row.bom_line_id ?? row.inspection_item_id ?? row.id ?? i)}>{columns.map(([key]) => {
+  return <Table.ScrollContainer minWidth={columns.length <= 3 ? 0 : 650} className={classes.frame}><Table striped highlightOnHover><Table.Thead><Table.Tr>{columns.map(([key, title]) => <Table.Th key={key} className={numeric.has(key) ? classes.num : undefined}>{title}</Table.Th>)}</Table.Tr></Table.Thead><Table.Tbody>{rows.map((row, i) => <Table.Tr key={String(row.movement_id ?? row.bom_line_id ?? row.inspection_item_id ?? row.id ?? i)}>{columns.map(([key]) => {
     const value = row[key];
     let label = value == null ? 'Sin información' : Array.isArray(value) ? value.join(', ') : typeof value === 'boolean' ? value ? 'Sí' : 'No' : String(value);
     if (key === 'probability' && value != null) label = new Intl.NumberFormat('es-MX', { style: 'percent', maximumFractionDigits: 1 }).format(Number(value));
