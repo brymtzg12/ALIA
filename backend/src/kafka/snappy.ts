@@ -5,13 +5,10 @@ const { CompressionCodecs, CompressionTypes } = kafkajs as any;
 
 // Descompresor Snappy propio (sin dependencias) para kafkajs, que no lo trae.
 // rpk y Redpanda Console comprimen con Snappy por defecto; sin esto el consumidor truena.
-// Soporta Snappy crudo y el enmarcado "xerial" que usan los clientes de Java.
-// Solo descomprime: nosotros publicamos sin compresión.
 
 const XERIAL_MAGIC = Buffer.from([0x82, 0x53, 0x4e, 0x41, 0x50, 0x50, 0x59, 0x00]);
 
 function decompressRaw(src: Buffer): Buffer {
-  // Longitud descomprimida en varint.
   let pos = 0;
   let length = 0;
   for (let shift = 0; ; shift += 7) {
@@ -25,7 +22,6 @@ function decompressRaw(src: Buffer): Buffer {
     const tag = src[pos++];
     const type = tag & 0x03;
     if (type === 0) {
-      // Literal.
       let len = tag >> 2;
       if (len >= 60) {
         const bytes = len - 59;
@@ -63,7 +59,7 @@ function decompressRaw(src: Buffer): Buffer {
 export function snappyDecompress(buf: Buffer): Buffer {
   if (buf.length >= 16 && buf.subarray(0, 8).equals(XERIAL_MAGIC)) {
     const chunks: Buffer[] = [];
-    let pos = 16; // magic (8) + versión (4) + compatible (4)
+    let pos = 16;
     while (pos < buf.length) {
       const size = buf.readInt32BE(pos);
       pos += 4;

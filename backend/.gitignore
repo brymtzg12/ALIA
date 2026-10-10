@@ -1,5 +1,4 @@
 node_modules/
 .env
 *.log
-# Foto de saldos del jurado (pnpm demo:reset --snapshot)
 saldo.json

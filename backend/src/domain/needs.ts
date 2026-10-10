@@ -6,8 +6,6 @@ import {
 } from './reservations.ts';
 import { recomputeSuggestion } from './suggestions.ts';
 
-// Necesidades de una orden por (orden, bom_line_id) — reglas 1 a 8, 13 y 14.
-
 type ApprovalItem = {
   inspection_item_id: number;
   bom_line_id: number;
@@ -34,7 +32,6 @@ export async function applyApproval(db: Db, wo: WorkOrderRef, inspectionId: numb
   const buys = items.filter((it) => it.action === 'buy');
   if (!buys.length) return;
 
-  // quantity null: se usa el qty_per_unit de la lista de partes vigente (regla 5).
   const lineIds = buys.filter((it) => it.quantity == null).map((it) => it.bom_line_id);
   const perUnit = new Map<number, number | null>();
   if (lineIds.length) {
@@ -45,14 +42,12 @@ export async function applyApproval(db: Db, wo: WorkOrderRef, inspectionId: numb
     for (const r of rows) perUnit.set(r.bom_line_id, r.qty_per_unit);
   }
 
-  // Necesidades vigentes de esas líneas (pueden cambiar de pieza).
   const { rows: prevRows } = await db.query(
     `SELECT bom_line_id, part_id FROM needs WHERE work_order_id = $1 AND bom_line_id = ANY($2::int[])`,
     [wo.work_order_id, buys.map((b) => b.bom_line_id)],
   );
   const prevPart = new Map<number, number | null>(prevRows.map((r: any) => [r.bom_line_id, r.part_id]));
 
-  // Candados de todas las piezas involucradas, en orden ascendente, antes de tocar nada.
   const parts = [...buys.map((b) => b.part_id), ...prevPart.values()].filter((p): p is number => p != null);
   await lockParts(db, parts);
 
@@ -67,7 +62,6 @@ export async function applyApproval(db: Db, wo: WorkOrderRef, inspectionId: numb
       inspectionItemId: it.inspection_item_id,
     };
 
-    // Si la línea cambió de pieza, lo apartado para la pieza anterior se libera.
     const before = prevPart.get(it.bom_line_id);
     if (prevPart.has(it.bom_line_id) && before !== it.part_id) {
       await releaseLine(db, wo.work_order_id, it.bom_line_id, null);
@@ -125,7 +119,6 @@ async function reconcileLine(db: Db, line: LineRef, required: number | null) {
   }
 }
 
-/** Quita necesidades: libera sus reservas y cierra sus faltantes (sin emitir, regla 15). */
 async function dropNeeds(db: Db, workOrderId: number, needs: Need[]) {
   const parts = needs.map((n) => n.part_id).filter((p): p is number => p != null);
   await lockParts(db, parts);
@@ -137,7 +130,6 @@ async function dropNeeds(db: Db, workOrderId: number, needs: Need[]) {
   return [...new Set(parts)].sort((a, b) => a - b);
 }
 
-/** inspection.voided (regla 13): solo las líneas cuya necesidad vigente vino de esa inspección. */
 export async function voidInspection(db: Db, workOrderId: number, inspectionId: number) {
   const { rows } = await db.query(
     `SELECT bom_line_id, part_id, name, required, inspection_item_id FROM needs
@@ -148,13 +140,11 @@ export async function voidInspection(db: Db, workOrderId: number, inspectionId: 
   for (const p of parts) await recomputeSuggestion(db, p);
 }
 
-/** work_order.deleted (regla 14): libera todo lo de la orden y cierra todos sus faltantes. */
 export async function deleteWorkOrder(db: Db, workOrderId: number) {
   const { rows } = await db.query(
     `SELECT bom_line_id, part_id, name, required, inspection_item_id FROM needs WHERE work_order_id = $1`,
     [workOrderId],
   );
-  // Reservas o faltantes que hubieran quedado fuera de una necesidad vigente.
   const { rows: extra } = await db.query(
     `SELECT DISTINCT bom_line_id, part_id FROM (
        SELECT bom_line_id, part_id FROM reservations WHERE work_order_id = $1 AND status = 'active'

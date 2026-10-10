@@ -1,8 +1,5 @@
 import type { Db } from '../db.ts';
 
-// Libro mayor: movimientos inmutables y saldos derivados (part_stock y location_stock),
-// actualizados en la misma transacción.
-//
 // Candados: todo lo que mueve saldo o reservas de una pieza toma primero la fila de
 // part_stock (FOR UPDATE), siempre en orden de part_id ascendente. Así location_stock,
 // reservas y faltantes de esa pieza quedan serializados sin candados adicionales.
@@ -21,7 +18,6 @@ export type Movement = {
   reference: string | null;
 };
 
-/** Bloquea las filas de saldo de las piezas (creándolas si faltan), en orden ascendente. */
 export async function lockParts(db: Db, partIds: number[]): Promise<Map<number, PartStock>> {
   const ids = [...new Set(partIds)].sort((a, b) => a - b);
   if (!ids.length) return new Map();
@@ -66,7 +62,7 @@ export type NewMovement = {
   type: MovementType;
   partId: number;
   locationId: number;
-  quantity: number; // con signo
+  quantity: number;
   occurredAt: string;
   reference?: string | null;
   workOrderId?: number | null;
@@ -77,11 +73,6 @@ export type NewMovement = {
   commandId?: string | null;
 };
 
-/**
- * Registra un movimiento y actualiza los saldos. El llamador ya tiene el candado de la pieza
- * y ya validó lo que haya que validar (el conteo es el único que puede dejar available < 0).
- * Devuelve null si el movimiento ya existía (misma línea de compra o mismo comando).
- */
 export async function recordMovement(db: Db, m: NewMovement): Promise<Movement | null> {
   const { rows } = await db.query(
     `INSERT INTO movements (type, part_id, location_id, quantity, occurred_at, reference, work_order_id,

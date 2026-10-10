@@ -3,8 +3,6 @@ import { emit } from '../events/outbox.ts';
 import { matchPartNumber, registerReceipt } from '../domain/receiving.ts';
 import type { Handler } from './types.ts';
 
-// shop.purchasing: purchase.item_received.
-
 export const purchaseItemReceived: Handler = {
   // Si no coincide con el catálogo mientras el catálogo va atrasado, se estaciona: la pieza
   // puede venir en camino (tópicos distintos no tienen orden entre sí). Con el catálogo al día,
@@ -19,12 +17,10 @@ export const purchaseItemReceived: Handler = {
 
   async handle(db, ev) {
     const d = ev.data;
-    // Regla 9: material para un cliente. No entra, no surte y no emite nada.
     if (d.purpose === 'customer_order') return 'ignored';
 
     const match = await matchPartNumber(db, d.part_number, d.description);
     if (match.partId == null) {
-      // Regla 10: ninguna o varias piezas. Queda para revisión manual.
       const ins = await db.query(
         `INSERT INTO unmatched_receipts (purchase_line_id, purchase_request_id, request_number, part_number, description,
                                          quantity, unit_price, currency, received_at, work_order_code, match_count)
@@ -41,7 +37,6 @@ export const purchaseItemReceived: Handler = {
         part_number: d.part_number,
         description: d.description,
         quantity: d.quantity,
-        // Extras:
         unmatched_receipt_id: ins.rows[0].id,
         unit_price: d.unit_price,
         currency: d.currency,
@@ -53,7 +48,6 @@ export const purchaseItemReceived: Handler = {
       return;
     }
 
-    // Reglas 11 y 12: entra a U-100, emite stock.received y surte faltantes.
     const movement = await registerReceipt(db, {
       partId: match.partId,
       quantity: d.quantity,
@@ -65,6 +59,6 @@ export const purchaseItemReceived: Handler = {
       origin: 'event',
       extra: { part_number: d.part_number, request_number: d.request_number, match_rule: match.rule },
     });
-    if (!movement) return 'ignored'; // esa línea de compra ya había entrado
+    if (!movement) return 'ignored';
   },
 };

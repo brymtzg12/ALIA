@@ -2,8 +2,6 @@ import type { Db } from '../db.ts';
 import { applyApproval, voidInspection } from '../domain/needs.ts';
 import type { Handler, InputEvent } from './types.ts';
 
-// shop.inspections. Solo approved crea necesidad (regla 1); el resto registra el estado.
-
 async function upsertInspection(db: Db, ev: InputEvent, status: string) {
   const d = ev.data;
   await db.query(
@@ -53,13 +51,11 @@ export const inspectionRejected = statusHandler('rejected');
 export const inspectionDiscarded = statusHandler('discarded');
 
 export const inspectionApproved: Handler = {
-  // Falta la orden, una pieza de un renglón buy, o la línea de la lista de partes
-  // cuando quantity es null (para tomar su qty_per_unit).
   async missingRefs(db, ev) {
     const d = ev.data;
     const state = await workOrderState(db, d.work_order_id);
     if (state === 'missing') return `orden ${d.work_order_id} desconocida`;
-    if (state === 'deleted') return null; // se ignora en handle
+    if (state === 'deleted') return null;
 
     const buys = d.items.filter((it: any) => it.action === 'buy');
     const partIds = [...new Set(buys.map((it: any) => it.part_id).filter((p: any) => p != null))];

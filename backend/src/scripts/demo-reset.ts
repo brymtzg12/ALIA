@@ -2,12 +2,6 @@ import { spawnSync } from 'node:child_process';
 import path from 'node:path';
 import { config } from '../config.ts';
 
-// Deja todo limpio para la demo con un solo comando:
-//   pnpm demo:reset                 borra los tópicos del kit, recarga las 6 semanas y reconstruye la base
-//   pnpm demo:reset --keep-topics   solo reconstruye la base (no toca Kafka)
-//   pnpm demo:reset --snapshot      además toma la foto de saldos del jurado (backend/saldo.json)
-// Requiere Docker Desktop y, de preferencia, pnpm dev corriendo.
-
 const args = new Set(process.argv.slice(2));
 const keepTopics = args.has('--keep-topics');
 const snapshot = args.has('--snapshot');
@@ -43,7 +37,6 @@ async function main() {
       body: JSON.stringify({ confirm: 'RESET' }),
     });
 
-  // 1. Tópicos del kit: pausar el backend, borrar y recargar el dataset sin pausas.
   if (!keepTopics) {
     step('Pausando los consumidores del backend');
     const paused = await post('/admin/pause');
@@ -73,7 +66,6 @@ async function main() {
     // sigue vivo y su panel responde; RESET solo actúa al arrancar.
   }
 
-  // 2. Base de datos: reconstrucción en caliente dentro del servidor.
   step('Reconstruyendo la base desde cero');
   const reset = await post('/admin/reset');
   if (!reset) {
@@ -88,7 +80,6 @@ async function main() {
   if (reset.status !== 200) throw new Error(`El backend rechazó la reconstrucción (${reset.status}): ${reset.body?.detail}`);
   console.log(`   base nueva, instance_id = ${reset.body.instance_id}`);
 
-  // 3. Esperar a que relea todo.
   step('Esperando a que el servicio relea los tópicos');
   const deadline = Date.now() + 240_000;
   let h: any = null;
@@ -101,7 +92,6 @@ async function main() {
   }
   console.log(`   procesados: ${h.processed} · errores: ${h.errors} · estacionados: ${h.parked} · DLQ: ${h.dlq}`);
 
-  // 4. Comprobaciones rápidas.
   step('Comprobando');
   const junk = await getJson(`${api}/parts?search=${encodeURIComponent('PIEZA DE PRUEBA')}&limit=5`);
   const junkCount = junk?.body?.items?.length ?? 0;
@@ -110,9 +100,7 @@ async function main() {
   console.log(`   órdenes abiertas: ${orders?.body?.items?.length ?? '?'}`);
   if (Number(h.errors) > 0 || Number(h.parked) > 0) console.log('   OJO: hay errores o estacionados; revisa /health antes de presentar.');
 
-  // 5. Foto de saldos del jurado (opcional).
   if (snapshot) {
-    // Se guarda en backend/, no en el kit (el kit no se modifica).
     step('Tomando la foto de saldos (backend/saldo.json)');
     const r = docker([
       'compose', 'run', '--rm', '-v', `${backendDir}:/out`, 'contract-tests',

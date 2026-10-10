@@ -2,7 +2,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import type { Db } from '../db.ts';
 
-// Políticas de mínimo y máximo por pieza (extra, regla 18: "o bajo su mínimo, si configuran
 // políticas"). Se guardan en la base y también en backend/data/policies.json, para que
 // sobrevivan a una reconstrucción (no vienen en los tópicos del taller) y queden en el repo.
 
@@ -25,7 +24,6 @@ function writeFile(policies: Policy[]) {
   fs.writeFileSync(FILE, JSON.stringify(sorted, null, 2) + '\n', 'utf8');
 }
 
-/** Carga el archivo a la base (al migrar o reconstruir). */
 export async function loadPoliciesFromFile(db: { query: Db['query'] }) {
   for (const p of readFile()) {
     await db.query(
@@ -61,11 +59,6 @@ export async function deletePolicy(db: Db, partId: number): Promise<boolean> {
   return (rowCount ?? 0) > 0;
 }
 
-/**
- * Mínimo y máximo recomendados con el uso histórico: lo que pidieron las inspecciones aprobadas
- * (la mayor cantidad por orden y línea) entre el periodo de las órdenes. Mínimo = consumo diario ×
- * días de entrega; máximo = consumo de (días de entrega + 14 días de revisión).
- */
 export async function recommendedPolicies(db: { query: Db['query'] }, leadDays: number) {
   const { rows } = await db.query(
     `WITH span AS (

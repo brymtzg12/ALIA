@@ -8,16 +8,11 @@ import { resetStats } from './events/processor.ts';
 import { consumerState, resetConsumerState, startConsumers } from './kafka/consumers.ts';
 import { startPublisher, stopPublisher } from './kafka/publisher.ts';
 
-// Ciclo de vida de lo que corre en segundo plano: consumidores, publicador del outbox y
-// reintento de estacionados. Permite reconstruir desde cero sin reiniciar el proceso
-// (la API y las conexiones SSE siguen vivas).
-
 let consumers: { stop(): Promise<void> } | null = null;
 let starting = false;
 let resetting = false;
 let paused = false;
 
-/** Conecta Kafka (reintenta si el broker no está) y arranca consumidores y publicador. */
 export async function startPipeline(): Promise<void> {
   const generation = ++consumerState.generation;
   starting = true;
@@ -52,7 +47,6 @@ export async function stopPipeline(): Promise<void> {
   await stopPublisher();
 }
 
-/** Pausa los consumidores (para que el kit pueda borrar y recrear sus tópicos sin choques). */
 export async function pausePipeline(): Promise<void> {
   // Se permite aunque esté arrancando (p. ej. si faltan tópicos): el arranque en curso ve que su
   // generación ya no es la vigente y se detiene solo.
@@ -65,13 +59,8 @@ export function pipelineStatus() {
   return { starting, resetting, paused };
 }
 
-/**
- * Reconstrucción desde cero en caliente: detiene todo, borra la base, la recrea (instance_id
- * nuevo = grupo de consumidores nuevo) y vuelve a leer los tópicos desde el inicio.
- */
 export async function resetPipeline(): Promise<{ instance_id: string }> {
   if (resetting) throw new Error('Ya hay una reconstrucción en curso');
-  // Mientras arranca (catálogo primero) los consumidores aún no se pueden detener limpiamente.
   if (starting && !paused) throw new Error('El servicio todavía está arrancando; espera a que /health diga catalog_ready');
   resetting = true;
   try {

@@ -15,13 +15,11 @@ export const consumerState = {
   catalogReady: false,
   rebuilding: false,
   startupHighs: null as Map<string, Map<number, number>> | null,
-  // Último offset procesado por "topic|partition" (para el lag en /health).
   processedOffsets: new Map<string, number>(),
   // Cada arranque de los consumidores tiene su número; lo de un arranque viejo se ignora.
   generation: 0,
 };
 
-/** Deja el estado en blanco (antes de reiniciar los consumidores sobre una base nueva). */
 export function resetConsumerState() {
   consumerState.groupPrefix = '';
   consumerState.catalogReady = false;
@@ -32,7 +30,6 @@ export function resetConsumerState() {
 
 const RETRY_AFTER = new Set(['shop.catalog', 'shop.work_orders']);
 
-/** Offsets ya confirmados del grupo, para no esperar mensajes que nunca van a llegar. */
 async function applyCommitted(groupId: string, topics: string[], catchUp: CatchUp) {
   const committed = await admin.fetchOffsets({ groupId, topics });
   for (const t of committed) {
@@ -58,10 +55,6 @@ function makeHandler(catchUp: CatchUp | null) {
   };
 }
 
-/**
- * Crea un consumidor y lo mantiene vivo: si truena con un error que kafkajs no reintenta
- * por su cuenta (restart = false), se desconecta y se vuelve a crear a los 5 s.
- */
 async function runConsumer(groupId: string, topics: string[], runOpts: Record<string, unknown>) {
   let current: any = null;
   let stopped = false;
@@ -102,29 +95,25 @@ export async function startConsumers(instanceId: string, generation = ++consumer
   const highs = await fetchHighWatermarks(INPUT_TOPICS);
   consumerState.startupHighs = highs;
 
-  // Reconstrucción: base nueva (nada procesado) y tópicos con historia. Hasta alcanzar las
-  // marcas del arranque, las salidas se guardan como publicadas sin enviarse.
   const { rows } = await pool.query(`SELECT count(*) AS n FROM processed_events`);
   const hasHistory = [...highs.values()].some((parts) => [...parts.values()].some((h) => h > 0));
   const allCatchUp = new CatchUp(highs);
   if (Number(rows[0].n) === 0 && hasHistory) {
     consumerState.rebuilding = true;
     setSuppressPublishing(true);
-    // Marcas de inventory.events del arranque: hasta ahí se releen los hechos de la API.
     const outputHighs = (await fetchHighWatermarks([OUTPUT_TOPIC])).get(OUTPUT_TOPIC)!;
     console.log('[kafka] base nueva: reconstruyendo desde el inicio sin publicar salidas');
     allCatchUp.done
       .then(() => replayApiFacts(consumerState.groupPrefix, outputHighs))
       .catch((err) => console.error('[kafka] error al reaplicar los hechos de la API:', err))
       .finally(() => {
-        if (!current()) return; // los consumidores se reiniciaron mientras tanto
+        if (!current()) return;
         consumerState.rebuilding = false;
         setSuppressPublishing(false);
         console.log('[kafka] reconstrucción terminada: se publican las salidas nuevas');
       });
   }
 
-  // 1. Catálogo.
   const catalogGroup = `${consumerState.groupPrefix}-catalog`;
   const catalogCatchUp = new CatchUp(new Map([[CATALOG_TOPIC, highs.get(CATALOG_TOPIC)!]]));
   await applyCommitted(catalogGroup, [CATALOG_TOPIC], catalogCatchUp);
@@ -141,7 +130,6 @@ export async function startConsumers(instanceId: string, generation = ++consumer
   console.log('[kafka] consumiendo shop.catalog hasta el final antes que lo demás...');
   await catalogCatchUp.done;
   consumerState.catalogReady = true;
-  // Desde aquí, "catálogo al día" = lo procesado alcanza la marca final actual de cada partición.
   setCatalogSyncCheck(async () => {
     try {
       const current = await fetchHighWatermarks([CATALOG_TOPIC]);
@@ -153,13 +141,12 @@ export async function startConsumers(instanceId: string, generation = ++consumer
       }
       return true;
     } catch {
-      return true; // sin broker no se puede saber; no bloquear las recepciones
+      return true;
     }
   });
   console.log('[kafka] catálogo al día');
   await retryParked();
 
-  // 2. Órdenes, inspecciones y compras (particiones en paralelo).
   const shopGroup = `${consumerState.groupPrefix}-shop`;
   await applyCommitted(shopGroup, SHOP_TOPICS, allCatchUp);
   const shopConsumer = await runConsumer(shopGroup, SHOP_TOPICS, {

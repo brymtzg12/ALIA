@@ -4,14 +4,8 @@ import { pool } from '../db.ts';
 import { notFound } from './errors.ts';
 import { intParam } from './validate.ts';
 
-// Extras analíticos: valuación a costo promedio, pronóstico de demanda por modelo y rotación.
-// Todo se calcula con los datos que ya están en la base (sin servicios externos).
-
 export const analyticsRoutes = Router();
 
-// --- GET /valuation ---------------------------------------------------------------------
-// Costo promedio ponderado por pieza con todas sus recepciones (cantidad × costo unitario).
-// USD se convierte a MXN con un tipo de cambio fijo y configurable (USD_MXN).
 analyticsRoutes.get('/valuation', async (_req: any, res: any) => {
   const rate = config.usdMxn;
   const { rows } = await pool.query(
@@ -39,7 +33,6 @@ analyticsRoutes.get('/valuation', async (_req: any, res: any) => {
       ...r,
       avg_cost: avg.toFixed(2),
       value: value.toFixed(2),
-      // Mismos datos con nombre largo (compatibilidad):
       average_cost_mxn: avg.toFixed(2),
       inventory_value_mxn: value.toFixed(2),
     };
@@ -55,10 +48,6 @@ analyticsRoutes.get('/valuation', async (_req: any, res: any) => {
     items,
   });
 });
-
-// --- Pronóstico de demanda --------------------------------------------------------------
-// Por línea de la lista de partes de un modelo: en cuántas órdenes de ese modelo con
-// inspección aprobada se pidió comprarla, y la cantidad promedio que se pidió.
 
 type LineForecast = {
   bom_line_id: number;
@@ -83,7 +72,6 @@ async function modelForecast(modelId: number): Promise<{ model: any; inspections
     `SELECT bom_line_id, part_id, name, group_name, qty_per_unit FROM bom_lines WHERE model_id = $1 ORDER BY sort_order, bom_line_id`,
     [modelId],
   );
-  // Por orden: la mayor cantidad pedida (buy) de cada línea en sus inspecciones aprobadas.
   const { rows: asks } = await pool.query(
     `WITH approved AS (
        SELECT i.work_order_id, i.items FROM inspections i
@@ -141,7 +129,6 @@ async function modelForecast(modelId: number): Promise<{ model: any; inspections
   return { model, inspections: insp.rows[0].n, lines: result };
 }
 
-// GET /forecast/models/{model_id}
 analyticsRoutes.get('/forecast/models/:model_id', async (req: any, res: any) => {
   const id = intParam(req.params.model_id);
   const f = id == null ? null : await modelForecast(id);
@@ -154,7 +141,6 @@ analyticsRoutes.get('/forecast/models/:model_id', async (req: any, res: any) => 
   });
 });
 
-// GET /forecast/models — resumen de modelos.
 analyticsRoutes.get('/forecast/models', async (_req: any, res: any) => {
   const { rows } = await pool.query(
     `SELECT m.model_id, m.model_name, m.brand,
@@ -165,8 +151,6 @@ analyticsRoutes.get('/forecast/models', async (_req: any, res: any) => {
   res.json({ items: rows });
 });
 
-// GET /forecast/open-orders — demanda esperada de las órdenes abiertas que aún no tienen
-// necesidad aprobada, por pieza, contra el disponible: "estas 5 órdenes probablemente pidan 4 y hay 3".
 analyticsRoutes.get('/forecast/open-orders', async (_req: any, res: any) => {
   const { rows: open } = await pool.query(
     `SELECT w.work_order_id, w.code, w.model_id FROM work_orders w
@@ -218,7 +202,6 @@ analyticsRoutes.get('/forecast/open-orders', async (_req: any, res: any) => {
   res.json({ open_orders: open.length, items });
 });
 
-// --- GET /rotation?days=30 --------------------------------------------------------------
 // Piezas críticas (más salidas y faltantes) y piezas sin movimiento en N días. La fecha de
 // referencia es el movimiento más reciente registrado (el dataset es histórico).
 analyticsRoutes.get('/rotation', async (req: any, res: any) => {

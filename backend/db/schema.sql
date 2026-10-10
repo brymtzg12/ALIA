@@ -1,17 +1,11 @@
--- KitListo · esquema del servicio de inventario
 -- Se aplica completo al arrancar (idempotente: IF NOT EXISTS). Sin claves foráneas entre
 -- tablas alimentadas por eventos, porque los eventos llegan en desorden entre tópicos.
-
--- ---------------------------------------------------------------------------
--- Meta e infraestructura de eventos
--- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS meta (
   key   text PRIMARY KEY,
   value text NOT NULL
 );
 
--- Idempotencia: un event_id procesado no vuelve a tener efectos ni salidas.
 CREATE TABLE IF NOT EXISTS processed_events (
   event_id     uuid PRIMARY KEY,
   event_type   text NOT NULL,
@@ -20,8 +14,6 @@ CREATE TABLE IF NOT EXISTS processed_events (
   processed_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Eventos que referencian algo aún desconocido (pieza, orden, línea de la lista de partes).
--- seq conserva el orden de llegada para reintentar respetando el orden por llave.
 CREATE TABLE IF NOT EXISTS parked_events (
   seq             bigserial PRIMARY KEY,
   event_id        uuid NOT NULL UNIQUE,
@@ -35,8 +27,6 @@ CREATE TABLE IF NOT EXISTS parked_events (
 );
 CREATE INDEX IF NOT EXISTS parked_events_key_idx ON parked_events (key);
 
--- Outbox: las salidas se escriben en la misma transacción que los efectos.
--- kind = 'event' va a inventory.events; kind = 'dlq' va a inventory.dlq.
 CREATE TABLE IF NOT EXISTS outbox (
   id           bigserial PRIMARY KEY,
   event_id     uuid NOT NULL,
@@ -48,10 +38,6 @@ CREATE TABLE IF NOT EXISTS outbox (
   published_at timestamptz
 );
 CREATE INDEX IF NOT EXISTS outbox_pending_idx ON outbox (id) WHERE published_at IS NULL;
-
--- ---------------------------------------------------------------------------
--- Catálogo
--- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS parts (
   part_id     integer PRIMARY KEY,
@@ -87,7 +73,6 @@ CREATE TABLE IF NOT EXISTS bom_models (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- bom.upserted reemplaza todas las líneas del modelo.
 CREATE TABLE IF NOT EXISTS bom_lines (
   bom_line_id  integer PRIMARY KEY,
   model_id     integer NOT NULL,
@@ -100,16 +85,11 @@ CREATE TABLE IF NOT EXISTS bom_lines (
 );
 CREATE INDEX IF NOT EXISTS bom_lines_model_idx ON bom_lines (model_id);
 
--- Alias aprendidos al resolver recepciones a mano: part_number normalizado a pieza.
 CREATE TABLE IF NOT EXISTS aliases (
   part_number_norm text PRIMARY KEY,
   part_id          integer NOT NULL,
   created_at       timestamptz NOT NULL DEFAULT now()
 );
-
--- ---------------------------------------------------------------------------
--- Taller: órdenes e inspecciones
--- ---------------------------------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS work_orders (
   work_order_id integer PRIMARY KEY,
@@ -134,11 +114,6 @@ CREATE TABLE IF NOT EXISTS inspections (
 );
 CREATE INDEX IF NOT EXISTS inspections_wo_idx ON inspections (work_order_id);
 
--- ---------------------------------------------------------------------------
--- Necesidades, reservas, faltantes y sugerencias
--- ---------------------------------------------------------------------------
-
--- Necesidad vigente por (orden, línea). inspection_id = la aprobación que la fijó (para voided).
 CREATE TABLE IF NOT EXISTS needs (
   work_order_id      integer NOT NULL,
   bom_line_id        integer NOT NULL,
@@ -169,7 +144,6 @@ CREATE TABLE IF NOT EXISTS reservations (
 CREATE INDEX IF NOT EXISTS reservations_wo_part_idx ON reservations (work_order_id, part_id) WHERE status = 'active';
 CREATE INDEX IF NOT EXISTS reservations_part_idx ON reservations (part_id) WHERE status = 'active';
 
--- Uno abierto por (orden, línea). missing_quantity null = cantidad desconocida.
 CREATE TABLE IF NOT EXISTS shortages (
   shortage_id        bigserial PRIMARY KEY,
   work_order_id      integer NOT NULL,
@@ -184,7 +158,6 @@ CREATE TABLE IF NOT EXISTS shortages (
 CREATE UNIQUE INDEX IF NOT EXISTS shortages_open_uq ON shortages (work_order_id, bom_line_id) WHERE closed_at IS NULL;
 CREATE INDEX IF NOT EXISTS shortages_part_open_idx ON shortages (part_id, opened_at) WHERE closed_at IS NULL;
 
--- Sugerencia vigente por pieza; se compara contra la nueva para decidir si se emite.
 CREATE TABLE IF NOT EXISTS reorder_suggestions (
   part_id            integer PRIMARY KEY,
   suggested_quantity integer NOT NULL CHECK (suggested_quantity >= 1),
@@ -192,10 +165,8 @@ CREATE TABLE IF NOT EXISTS reorder_suggestions (
   updated_at         timestamptz NOT NULL DEFAULT now()
 );
 
--- Motivo de la sugerencia: shortage, below_min o shortage_and_min.
 ALTER TABLE reorder_suggestions ADD COLUMN IF NOT EXISTS reason text;
 
--- Extra: políticas mínimo/máximo por pieza (también en backend/data/policies.json).
 CREATE TABLE IF NOT EXISTS policies (
   part_id        integer PRIMARY KEY,
   min_qty        integer,
@@ -204,12 +175,6 @@ CREATE TABLE IF NOT EXISTS policies (
   lead_time_days integer
 );
 
--- ---------------------------------------------------------------------------
--- Libro mayor
--- ---------------------------------------------------------------------------
-
--- Saldos derivados de movements (se actualizan en la misma transacción).
--- part_stock es el candado para reservar (SELECT ... FOR UPDATE).
 -- No hay CHECK de reserved <= on_hand: un conteo puede dejar available negativo (regla 17);
 -- salidas, transferencias y reservas lo validan en código con el candado tomado.
 CREATE TABLE IF NOT EXISTS part_stock (
@@ -225,7 +190,6 @@ CREATE TABLE IF NOT EXISTS location_stock (
   PRIMARY KEY (part_id, location_id)
 );
 
--- Inmutable. Saldo = suma de quantity.
 CREATE TABLE IF NOT EXISTS movements (
   movement_id      bigserial PRIMARY KEY,
   type             text NOT NULL CHECK (type IN ('receipt', 'issue', 'transfer_out', 'transfer_in', 'adjustment')),
@@ -243,9 +207,7 @@ CREATE TABLE IF NOT EXISTS movements (
   created_at       timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS movements_part_idx ON movements (part_id, occurred_at, movement_id);
--- Una línea de compra entra una sola vez al inventario.
 CREATE UNIQUE INDEX IF NOT EXISTS movements_receipt_line_uq ON movements (purchase_line_id) WHERE type = 'receipt';
--- Idempotencia de los movimientos de la API (un comando puede generar dos filas: transferencia).
 CREATE UNIQUE INDEX IF NOT EXISTS movements_command_uq ON movements (command_id, type) WHERE command_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS unmatched_receipts (
@@ -264,10 +226,6 @@ CREATE TABLE IF NOT EXISTS unmatched_receipts (
   resolved_part_id    integer,
   resolved_at         timestamptz
 );
-
--- ---------------------------------------------------------------------------
--- Semillas
--- ---------------------------------------------------------------------------
 
 -- U-100 (Recepción): varias pruebas no la publican y toda entrada cae ahí.
 INSERT INTO locations (location_id, code, name, is_workbench, active)

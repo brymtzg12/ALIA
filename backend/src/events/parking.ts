@@ -1,14 +1,9 @@
 import { pool } from '../db.ts';
 import { processParked } from './processor.ts';
 
-// Reintento de eventos estacionados. Respeta el orden por llave: si el primero de una llave
-// sigue estacionado, los siguientes de esa llave ni se intentan en esta pasada.
-// No van a la DLQ por tiempo; se ven en /health.
-
 let running: Promise<number> | null = null;
 let again = false;
 
-/** Reintenta los estacionados. Si ya hay una pasada en curso, agenda otra al terminar. */
 export function retryParked(): Promise<number> {
   if (running) {
     again = true;
@@ -29,7 +24,6 @@ export function retryParked(): Promise<number> {
   return running;
 }
 
-/** Una pasada; repite mientras alguno salga del estacionamiento. Devuelve cuántos salieron. */
 async function retryPass(): Promise<number> {
   let released = 0;
   for (;;) {

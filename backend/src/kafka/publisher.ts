@@ -1,13 +1,11 @@
 import { pool } from '../db.ts';
 import { producer } from './client.ts';
 
-// Publicador del outbox: lee lo pendiente en orden y lo manda a Kafka con su key.
 // key del mensaje = key del sobre (el contrato lo exige).
 
 type Listener = (event: any) => void;
 const listeners = new Set<Listener>();
 
-/** Para SSE: se llama con cada salida stock.* publicada. */
 export function onPublished(fn: Listener) {
   listeners.add(fn);
   return () => listeners.delete(fn);
@@ -24,7 +22,6 @@ async function publishPending(): Promise<number> {
 
   const byTopic = new Map<string, any[]>();
   for (const r of rows) {
-    // DLQ de un mensaje que no era JSON: se reenvía el texto original tal cual.
     const value = typeof r.event === 'string' ? r.event : JSON.stringify(r.event);
     const list = byTopic.get(r.topic) ?? [];
     list.push({ key: r.key, value });
@@ -52,7 +49,6 @@ export async function startPublisher(intervalMs = 200) {
     if (busy) return;
     busy = true;
     try {
-      // Vacía todo lo pendiente antes de esperar al siguiente intervalo.
       while ((await publishPending()) === 500);
     } catch (err: any) {
       console.error('[publisher] error al publicar, se reintenta:', err.message);

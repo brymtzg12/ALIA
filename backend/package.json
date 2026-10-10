@@ -1,9 +1,9 @@
 {
-  "name": "kitlisto-backend",
+  "name": "alia-backend",
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "KitListo · servicio de inventario (libro mayor, reservas, faltantes)",
+  "description": "ALIA · servicio de inventario (libro mayor, reservas, faltantes)",
   "engines": {
     "node": ">=24"
   },

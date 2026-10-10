@@ -3,8 +3,6 @@ import { emit } from '../events/outbox.ts';
 import { availableOf, reserve } from './reservations.ts';
 import { recomputeSuggestion } from './suggestions.ts';
 
-// Surtido de faltantes con una entrada (regla 12).
-
 /**
  * Con una entrada de la pieza se surten sus faltantes abiertos: primero los de la orden de
  * workOrderCode (si viene y sigue viva) y después los demás, del más antiguo al más nuevo.
@@ -42,7 +40,6 @@ export async function fillShortagesFromReceipt(db: Db, partId: number, _quantity
         work_order_id: s.work_order_id,
         part_id: partId,
         quantity: take,
-        // Extras:
         work_order_code: s.code,
         bom_line_id: s.bom_line_id,
         inspection_item_id: s.inspection_item_id,

@@ -2,14 +2,6 @@ import type { Db } from '../db.ts';
 import { emit } from '../events/outbox.ts';
 import { getPolicy } from './policies.ts';
 
-// Sugerencias de compra (regla 18). Una pieza tiene sugerencia vigente si:
-//  a) tiene faltantes abiertos: cantidad = suma de missing_quantity no nulos, + 1 por cada faltante
-//     sin cantidad (para que exista); órdenes = las de esos faltantes, sin repetir y ordenadas;
-//  b) o queda bajo su mínimo (si tiene política): lo que queda disponible después de cubrir los
-//     faltantes es menor que el mínimo. Entonces se sugiere lo necesario para volver al máximo,
-//     y nunca menos que lo que falta.
-// Se emite stock.reorder_suggested solo cuando nace o cambia (cantidad u órdenes). Si ya no hay
-// motivo, se borra sin emitir.
 // Requisito: el llamador tiene el candado de part_stock de la pieza.
 
 export async function recomputeSuggestion(db: Db, partId: number | null) {
@@ -32,13 +24,12 @@ export async function recomputeSuggestion(db: Db, partId: number | null) {
 
   const forShortages = workOrderIds.length ? Math.max(1, missing + unknown) : 0;
 
-  // Política mínimo/máximo.
   let forPolicy = 0;
   let projected: number | null = null;
   const policy = await getPolicy(db, partId);
   if (policy) {
     const stock = await db.query(`SELECT on_hand - reserved AS available FROM part_stock WHERE part_id = $1`, [partId]);
-    projected = (stock.rows[0]?.available ?? 0) - missing; // lo que queda tras cubrir los faltantes
+    projected = (stock.rows[0]?.available ?? 0) - missing;
     if (projected < policy.min_qty) forPolicy = Math.max(1, policy.max_qty - projected);
   }
 
@@ -64,7 +55,6 @@ export async function recomputeSuggestion(db: Db, partId: number | null) {
     part_id: partId,
     suggested_quantity: quantity,
     work_order_ids: workOrderIds,
-    // Extras:
     sku: part.rows[0]?.sku ?? null,
     name: part.rows[0]?.name ?? null,
     missing_quantity: missing,

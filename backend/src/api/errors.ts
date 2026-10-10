@@ -1,4 +1,3 @@
-// Errores HTTP del contrato: siempre un objeto con "detail" en texto.
 
 export class HttpError extends Error {
   status: number;

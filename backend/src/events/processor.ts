@@ -4,8 +4,6 @@ import { handlers } from '../handlers/index.ts';
 import type { InputEvent } from '../handlers/types.ts';
 import { sendToDlq } from './outbox.ts';
 
-// Camino único de procesamiento de eventos de entrada (Kafka y modo archivo).
-
 export type Outcome = 'ok' | 'ignored' | 'duplicate' | 'parked' | 'invalid' | 'unknown_type' | 'error';
 
 export const stats: Record<Outcome, number> & { lastProcessedAt: string | null; lastEventId: string | null } = {
@@ -47,7 +45,6 @@ export async function processMessage(msg: Message): Promise<Outcome> {
   return count(await processWithRetry(msg.topic, event, null));
 }
 
-/** Reintento de un evento estacionado (llamado desde parking.ts). */
 export async function processParked(topic: string, event: InputEvent, seq: number): Promise<Outcome> {
   return processWithRetry(topic, event, seq);
 }
@@ -62,7 +59,6 @@ async function processWithRetry(topic: string, event: InputEvent, parkedSeq: num
         continue;
       }
       console.error(`[processor] ${event.event_type} ${event.event_id} falló ${MAX_ATTEMPTS} veces:`, err);
-      // Al DLQ con su key, y se marca procesado con error para no trabar la partición.
       await withTx(async (db) => {
         await sendToDlq(event, event.key, `error al procesar: ${err?.message ?? err}`, db);
         await db.query(
@@ -91,7 +87,6 @@ async function processOnce(topic: string, event: InputEvent, parkedSeq: number |
       return 'duplicate';
     }
 
-    // 2. Una reentrega de algo que ya está estacionado espera su turno.
     if (parkedSeq == null) {
       const already = await db.query(`SELECT 1 FROM parked_events WHERE event_id = $1`, [event.event_id]);
       if (already.rowCount) {
@@ -107,7 +102,6 @@ async function processOnce(topic: string, event: InputEvent, parkedSeq: number |
     );
     let reason: string | null = ahead.rowCount ? 'esperando a un evento anterior de la misma llave' : null;
 
-    // 4. Referencias desconocidas: se estaciona (no es error).
     if (!reason && handler.missingRefs) reason = await handler.missingRefs(db, event);
     if (reason) {
       await unmarkProcessed(db, event.event_id);
@@ -115,7 +109,6 @@ async function processOnce(topic: string, event: InputEvent, parkedSeq: number |
       return 'parked';
     }
 
-    // 5. Efectos y salidas (outbox) en la misma transacción.
     const result = await handler.handle(db, event);
     if (result === 'ignored') {
       await db.query(`UPDATE processed_events SET status = 'ignored' WHERE event_id = $1`, [event.event_id]);

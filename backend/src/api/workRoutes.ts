@@ -3,11 +3,8 @@ import { pool } from '../db.ts';
 import { notFound } from './errors.ts';
 import { intParam } from './validate.ts';
 
-// Rutas del contrato de órdenes: materiales, faltantes y sugerencias de compra.
-
 export const workRoutes = Router();
 
-// GET /work-orders/{code}/materials — una línea por bom_line_id con necesidad vigente.
 workRoutes.get('/work-orders/:code/materials', async (req: any, res: any) => {
   const { rows: wos } = await pool.query(
     `SELECT w.work_order_id, w.code, w.model_id, m.model_name, m.brand, w.stage, w.received_at, w.deleted_at
@@ -60,7 +57,6 @@ workRoutes.get('/work-orders/:code/materials', async (req: any, res: any) => {
   res.json({
     work_order_id: wo.work_order_id,
     code: wo.code,
-    // Extras:
     model_id: wo.model_id,
     model_name: wo.model_name ?? null,
     brand: wo.brand ?? null,
@@ -73,7 +69,6 @@ workRoutes.get('/work-orders/:code/materials', async (req: any, res: any) => {
   });
 });
 
-// GET /shortages?work_order_code=&part_id= — faltantes abiertos.
 workRoutes.get('/shortages', async (req: any, res: any) => {
   const filters: string[] = ['s.closed_at IS NULL'];
   const params: unknown[] = [];
@@ -99,7 +94,6 @@ workRoutes.get('/shortages', async (req: any, res: any) => {
   res.json({ items: rows });
 });
 
-// GET /reorder-suggestions — sugerencias vigentes.
 workRoutes.get('/reorder-suggestions', async (_req: any, res: any) => {
   const { rows } = await pool.query(
     `SELECT r.part_id, p.sku, p.name, r.suggested_quantity, r.work_order_ids, r.reason,

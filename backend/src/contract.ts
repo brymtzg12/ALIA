@@ -4,9 +4,6 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import addFormats from 'ajv-formats';
 import { config } from './config.ts';
 
-// Carga los JSON Schema del kit (solo lectura) y los registra por su $id para que
-// resuelvan las referencias relativas a common.schema.json.
-
 type IndexEntry = { topic: string; schema: string };
 type ContractIndex = { input: Record<string, IndexEntry>; output: Record<string, IndexEntry> };
 type Validator = ((data: unknown) => boolean) & { errors?: any[] | null };
@@ -39,7 +36,6 @@ function compileGroup(group: Record<string, IndexEntry>): Map<string, Validator>
 const inputValidators = compileGroup(index.input);
 const outputValidators = compileGroup(index.output);
 
-/** Tópico de entrada de cada event_type (shop.*). */
 export const INPUT_TOPICS: Record<string, string> = Object.fromEntries(
   Object.entries(index.input).map(([type, e]) => [type, e.topic]),
 );

@@ -5,7 +5,7 @@ import { registerSnappy } from './snappy.ts';
 registerSnappy();
 
 export const kafka = new Kafka({
-  clientId: 'kitlisto-inventory',
+  clientId: 'alia-inventory',
   brokers: config.kafkaBrokers,
   logLevel: logLevel.WARN,
   retry: { initialRetryTime: 300, retries: 10 },
@@ -23,7 +23,6 @@ export const producer = kafka.producer({
 
 export const admin = kafka.admin();
 
-/** Marca final (high watermark) por partición de cada tópico, en este momento. */
 export async function fetchHighWatermarks(topics: string[]): Promise<Map<string, Map<number, number>>> {
   const result = new Map<string, Map<number, number>>();
   for (const topic of topics) {

@@ -1,8 +1,6 @@
 import { compactSku, normSku } from '../domain/sku.ts';
 import type { Handler } from './types.ts';
 
-// shop.catalog: piezas, ubicaciones y listas de partes. Nunca se estacionan.
-
 export const partUpserted: Handler = {
   async handle(db, ev) {
     const d = ev.data;

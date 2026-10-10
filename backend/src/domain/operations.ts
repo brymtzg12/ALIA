@@ -6,7 +6,6 @@ import { apiMovementTime, locationOnHand, lockPart, lockParts, recordMovement, t
 import { registerReceipt } from './receiving.ts';
 import { recomputeSuggestion } from './suggestions.ts';
 
-// Operaciones de piso que nacen en la API: salida, transferencia, conteo y recepción resuelta.
 // Cada salida stock.* lleva origin "api" y command_id (campos extra) para poder reaplicarla
 // al reconstruir (los tópicos del taller no las contienen).
 
@@ -31,8 +30,6 @@ async function requireLocation(db: Db, locationId: number) {
   return rows[0];
 }
 
-// --- POST /issues ---------------------------------------------------------------------
-
 export type IssueInput = {
   work_order_code: string;
   part_id: number;
@@ -49,7 +46,7 @@ export async function issue(
   db: Db,
   input: IssueInput,
   commandId = randomUUID(),
-  occurredAt: string | null = null, // al reconstruir: la hora original
+  occurredAt: string | null = null,
 ): Promise<Movement> {
   const wo = await findWorkOrderByCode(db, input.work_order_code);
   if (!wo) throw notFound(`La orden ${input.work_order_code} no existe`);
@@ -63,7 +60,6 @@ export async function issue(
     throw conflict(`No alcanza el saldo en la ubicación: hay ${here}, se piden ${input.quantity}`);
   }
 
-  // Reservas activas de esta orden para esta pieza, de la más antigua a la más nueva.
   const res = await db.query(
     `SELECT reservation_id, quantity FROM reservations
      WHERE work_order_id = $1 AND part_id = $2 AND status = 'active' AND quantity > 0
@@ -114,7 +110,6 @@ export async function issue(
     location_id: input.location_id,
     quantity: input.quantity,
     issued_by: input.issued_by,
-    // Extras:
     work_order_code: wo.code,
     from_reservation: fromReservation,
     movement_id: movement.movement_id,
@@ -122,12 +117,9 @@ export async function issue(
     origin: 'api',
     command_id: commandId,
   });
-  // Bajó el disponible: puede quedar bajo su mínimo.
   await recomputeSuggestion(db, input.part_id);
   return movement;
 }
-
-// --- POST /transfers ------------------------------------------------------------------
 
 export type TransferInput = { part_id: number; from_location_id: number; to_location_id: number; quantity: number };
 
@@ -160,7 +152,6 @@ export async function transfer(db: Db, input: TransferInput, commandId = randomU
     from_location_id: input.from_location_id,
     to_location_id: input.to_location_id,
     quantity: input.quantity,
-    // Extras:
     movement_id: out.movement_id,
     movement_occurred_at: out.occurred_at,
     origin: 'api',
@@ -168,8 +159,6 @@ export async function transfer(db: Db, input: TransferInput, commandId = randomU
   });
   return out;
 }
-
-// --- POST /counts ---------------------------------------------------------------------
 
 export type CountInput = { location_id: number; reason: string; lines: { part_id: number; counted_quantity: number }[] };
 
@@ -181,7 +170,6 @@ export async function count(db: Db, input: CountInput): Promise<{ part_id: numbe
   await requireLocation(db, input.location_id);
   for (const line of input.lines) await requirePart(db, line.part_id);
 
-  // Candados de todas las piezas del conteo en orden ascendente.
   await lockParts(db, input.lines.map((l) => l.part_id));
 
   const adjustments: { part_id: number; delta: number }[] = [];
@@ -199,7 +187,6 @@ export async function count(db: Db, input: CountInput): Promise<{ part_id: numbe
       location_id: input.location_id,
       delta,
       reason: input.reason,
-      // Extras:
       counted_quantity: line.counted_quantity,
       movement_id: movement.movement_id,
       movement_occurred_at: movement.occurred_at,
@@ -211,8 +198,6 @@ export async function count(db: Db, input: CountInput): Promise<{ part_id: numbe
   }
   return adjustments;
 }
-
-// --- POST /unmatched-receipts/{id}/resolve --------------------------------------------
 
 export async function resolveUnmatched(
   db: Db,

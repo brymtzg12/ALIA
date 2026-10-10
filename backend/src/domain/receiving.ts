@@ -5,8 +5,6 @@ import { lockPart, recordMovement, type Movement } from './ledger.ts';
 import { compactSku, normSku } from './sku.ts';
 import { fillShortagesFromReceipt } from './fulfillment.ts';
 
-// Recepciones de compra: relación con el catálogo y entrada al almacén.
-
 export type MatchResult = { partId: number; rule: string } | { partId: null; candidates: number[] };
 
 // Prefijos que el taller antepone al número de parte: "NP: ", "N/P ", "P/N:", "PN-"...
@@ -14,7 +12,6 @@ const PART_NUMBER_PREFIX = /^\s*(?:N\/?P|P\/?N)\s*[:#.\-]?\s+|^\s*(?:N\/?P|P\/?N
 // "S/N ..." = sin número de parte: solo sirve la descripción.
 const NO_PART_NUMBER = /^\s*S\/N/i;
 
-/** Texto normalizado para comparar nombres y descripciones: mayúsculas, espacios simples. */
 function normText(value: string | null | undefined): string | null {
   const n = normSku(value)?.replace(/\s+/g, ' ');
   return n || null;
@@ -31,7 +28,6 @@ async function bySku(db: Db, value: string): Promise<number[]> {
   return c.rows.map((r: any) => r.part_id);
 }
 
-/** De varias piezas, la única cuyo nombre es igual a la descripción (o null si no hay una sola). */
 async function pickByName(db: Db, partIds: number[], description: string): Promise<number | null> {
   const desc = normText(description);
   if (!desc) return null;
@@ -65,7 +61,6 @@ export async function matchPartNumber(db: Db, partNumber: string, description = 
     }
   }
 
-  // Sin número útil: la descripción.
   const desc = normText(description);
   if (desc) {
     const ids = await bySku(db, desc);
@@ -98,10 +93,6 @@ export type ReceiptInput = {
   extra?: Record<string, unknown>;
 };
 
-/**
- * Registra la entrada (por defecto en U-100), emite stock.received y surte faltantes de la
- * pieza. Devuelve null si esa línea de compra ya había entrado.
- */
 export async function registerReceipt(db: Db, r: ReceiptInput): Promise<Movement | null> {
   const locationId = r.locationId ?? config.receivingLocationId;
   await lockPart(db, r.partId);
@@ -128,7 +119,6 @@ export async function registerReceipt(db: Db, r: ReceiptInput): Promise<Movement
     unit_cost: r.unitPrice,
     currency: r.currency,
     purchase_line_id: r.purchaseLineId,
-    // Extras (permitidos por el contrato):
     part_name: part.rows[0]?.name ?? null,
     sku: part.rows[0]?.sku ?? null,
     movement_id: movement.movement_id,

@@ -5,7 +5,6 @@ import { migrate } from './migrate.ts';
 import { createApp } from './api/server.ts';
 import { startPipeline, stopPipeline } from './pipeline.ts';
 
-// Arranque: esquema, contratos, API, y en segundo plano Kafka (catálogo primero) y outbox.
 async function main() {
   await migrate();
   const instanceId = await getInstanceId();
@@ -17,7 +16,6 @@ async function main() {
     console.log(`[main] API escuchando en http://0.0.0.0:${config.port}`);
   });
 
-  // Kafka no detiene la API: si el broker no está, se reintenta en segundo plano.
   startPipeline().catch((err) => console.error('[main] error al arrancar Kafka:', err));
 
   const shutdown = async () => {

@@ -3,9 +3,6 @@ import { stats } from '../events/processor.ts';
 import { fetchHighWatermarks, INPUT_TOPICS } from '../kafka/client.ts';
 import { consumerState } from '../kafka/consumers.ts';
 
-// Salud del consumidor (GET /health y mensaje "health" del SSE).
-
-/** Lag por tópico: marca final actual menos lo procesado por este servicio. */
 async function computeLag(): Promise<{ topic: string; lag: number | null }[]> {
   if (!consumerState.groupPrefix) return INPUT_TOPICS.map((topic) => ({ topic, lag: null }));
   try {
@@ -44,7 +41,6 @@ export async function getHealth(sseClients = 0) {
     catalog_ready: consumerState.catalogReady,
     consumers: await computeLag(),
     ...rows[0],
-    // Extras:
     group_prefix: consumerState.groupPrefix,
     sse_clients: sseClients,
     outcomes: stats,

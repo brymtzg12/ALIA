@@ -5,9 +5,6 @@ import { suggestCandidates } from '../domain/candidates.ts';
 import { notFound } from './errors.ts';
 import { intParam, validateBody } from './validate.ts';
 
-// Rutas del contrato del libro mayor: saldos, kardex, salidas, transferencias, conteos y
-// recepciones sin relacionar.
-
 export const ledgerRoutes = Router();
 
 async function requirePartId(raw: string): Promise<number> {
@@ -18,7 +15,6 @@ async function requirePartId(raw: string): Promise<number> {
   return partId;
 }
 
-// GET /parts/{part_id}/availability
 ledgerRoutes.get('/parts/:part_id/availability', async (req: any, res: any) => {
   const partId = await requirePartId(req.params.part_id);
   const totals = await pool.query(`SELECT on_hand, reserved FROM part_stock WHERE part_id = $1`, [partId]);
@@ -47,7 +43,6 @@ ledgerRoutes.get('/parts/:part_id/availability', async (req: any, res: any) => {
   });
 });
 
-// GET /parts/{part_id}/ledger — del más reciente al más antiguo, con saldo total corrido.
 ledgerRoutes.get('/parts/:part_id/ledger', async (req: any, res: any) => {
   const partId = await requirePartId(req.params.part_id);
   const { rows } = await pool.query(
@@ -61,40 +56,34 @@ ledgerRoutes.get('/parts/:part_id/ledger', async (req: any, res: any) => {
   res.json({ part_id: partId, entries: rows });
 });
 
-// POST /issues
 ledgerRoutes.post('/issues', async (req: any, res: any) => {
   const body = validateBody('issue', req.body);
   const movement = await withTx((db) => issue(db, body));
   res.status(201).json(movement);
 });
 
-// POST /transfers
 ledgerRoutes.post('/transfers', async (req: any, res: any) => {
   const body = validateBody('transfer', req.body);
   const movement = await withTx((db) => transfer(db, body));
   res.status(201).json(movement);
 });
 
-// POST /counts
 ledgerRoutes.post('/counts', async (req: any, res: any) => {
   const body = validateBody('count', req.body);
   const adjustments = await withTx((db) => count(db, body));
   res.status(201).json({ adjustments });
 });
 
-// GET /unmatched-receipts — pendientes de revisión manual.
 ledgerRoutes.get('/unmatched-receipts', async (_req: any, res: any) => {
   const { rows } = await pool.query(
     `SELECT id, purchase_line_id, part_number, description, quantity, unit_price, currency, received_at,
             work_order_code, request_number, match_count
      FROM unmatched_receipts WHERE resolved_at IS NULL ORDER BY received_at, id`,
   );
-  // Extra: candidatos sugeridos (part_id, sku, name, score de 0 a 1), del mejor al peor.
   const parts = (await pool.query(`SELECT part_id, sku, name FROM parts WHERE active`)).rows;
   res.json({ items: rows.map((r: any) => ({ ...r, candidates: suggestCandidates(r, parts) })) });
 });
 
-// POST /unmatched-receipts/{id}/resolve
 ledgerRoutes.post('/unmatched-receipts/:id/resolve', async (req: any, res: any) => {
   const id = intParam(req.params.id);
   if (id == null) throw notFound(`La recepción sin relacionar ${req.params.id} no existe`);

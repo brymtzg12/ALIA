@@ -7,10 +7,6 @@ import { setSuppressPublishing } from '../events/outbox.ts';
 import { processMessage, stats } from '../events/processor.ts';
 import { retryParked } from '../events/parking.ts';
 
-// Modo archivo: alimenta events.jsonl a los mismos manejadores, en orden de archivo.
-// Uso: pnpm replay -- <archivo> [--reset] [--catalog-first]
-// Las salidas quedan marcadas como publicadas (no hay broker que las reciba).
-
 const args = process.argv.slice(2);
 const file = args.find((a) => !a.startsWith('--')) ?? path.resolve(config.contractDir, '..', 'data', 'events.jsonl');
 const reset = args.includes('--reset');
@@ -23,7 +19,6 @@ async function main() {
   setSuppressPublishing(true);
 
   const entries = fs.readFileSync(file, 'utf8').split('\n').filter((l) => l.trim()).map((l) => JSON.parse(l));
-  // Con --catalog-first se imita el arranque real: shop.catalog completo antes que lo demás (regla 22).
   const ordered = catalogFirst
     ? [...entries.filter((e) => e.topic === 'shop.catalog'), ...entries.filter((e) => e.topic !== 'shop.catalog')]
     : entries;

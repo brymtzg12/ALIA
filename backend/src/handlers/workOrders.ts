@@ -1,8 +1,6 @@
 import { deleteWorkOrder } from '../domain/needs.ts';
 import type { Handler } from './types.ts';
 
-// shop.work_orders: órdenes de trabajo.
-
 async function workOrderExists(db: any, workOrderId: number): Promise<boolean> {
   const { rowCount } = await db.query(`SELECT 1 FROM work_orders WHERE work_order_id = $1`, [workOrderId]);
   return rowCount > 0;

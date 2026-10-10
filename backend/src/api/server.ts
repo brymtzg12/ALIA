@@ -13,7 +13,6 @@ export function createApp() {
   const app = express();
   app.use(express.json({ limit: '1mb' }));
 
-  // CORS abierto para el frontend en desarrollo.
   app.use((req: any, res: any, next: any) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
@@ -60,10 +59,8 @@ export function createApp() {
   app.use(policyRoutes);
   app.use(streamRoutes);
 
-  // Ruta desconocida.
   app.use((_req: any, _res: any, next: any) => next(new HttpError(404, 'Ruta no encontrada')));
 
-  // Manejador de errores: siempre { detail }.
   app.use((err: any, _req: any, res: any, _next: any) => {
     if (err instanceof HttpError) return res.status(err.status).json({ detail: err.message });
     if (err?.type === 'entity.parse.failed') return res.status(422).json({ detail: 'El cuerpo no es JSON válido' });

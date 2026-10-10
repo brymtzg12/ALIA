@@ -3,9 +3,6 @@ import path from 'node:path';
 import { config } from '../config.ts';
 import { contractStats, INPUT_TOPICS, validateInput } from '../contract.ts';
 
-// Verifica que los esquemas del kit compilan y que cada evento del dataset es válido.
-// No necesita base de datos ni broker.
-
 const file = process.argv[2] ?? path.resolve(config.contractDir, '..', 'data', 'events.jsonl');
 console.log(`[contrato] ${contractStats.inputs} esquemas de entrada y ${contractStats.outputs} de salida compilados`);
 

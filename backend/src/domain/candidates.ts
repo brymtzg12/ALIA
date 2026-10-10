@@ -1,8 +1,5 @@
 import { compactSku, normSku } from './sku.ts';
 
-// Candidatos sugeridos para relacionar a mano una recepción: piezas cuyo sku o nombre se parece
-// al número de parte o a la descripción de la compra. Solo ayuda a la persona; nunca relaciona solo.
-
 type PartLite = { part_id: number; sku: string | null; name: string };
 
 function bigrams(s: string): Map<string, number> {
@@ -37,7 +34,6 @@ export function suggestCandidates(
     .map((p) => {
       const bySku = p.sku ? similarity(pn, compactSku(p.sku) ?? '') : 0;
       const byName = similarity(desc, (normSku(p.name) ?? '').replace(/\s+/g, ' ')) * 0.9;
-      // El número de parte contenido en el sku (o al revés) es buena señal.
       const contains = p.sku && pn.length >= 4 && ((compactSku(p.sku) ?? '').includes(pn) || pn.includes(compactSku(p.sku) ?? '#')) ? 0.85 : 0;
       return { part_id: p.part_id, sku: p.sku, name: p.name, score: Math.max(bySku, byName, contains) };
     })

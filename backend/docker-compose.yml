@@ -1,4 +1,3 @@
-# Solo PostgreSQL. Puerto 5433 en la laptop para no chocar con un Postgres local.
 services:
   postgres:
     image: postgres:17

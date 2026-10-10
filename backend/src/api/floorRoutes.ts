@@ -4,9 +4,6 @@ import { compactSku, normSku } from '../domain/sku.ts';
 import { notFound } from './errors.ts';
 import { intParam } from './validate.ts';
 
-// Rutas extra para el frontend. Las formas siguen el contrato compartido con Baruk
-// (CLAUDE_frontend.md, sección 5.2). Se pueden agregar campos; no quitar ni renombrar.
-
 export const floorRoutes = Router();
 
 const PART_ROW = `
@@ -24,7 +21,6 @@ const PART_JOINS = `
              WHERE closed_at IS NULL AND part_id IS NOT NULL GROUP BY part_id) sh ON sh.part_id = p.part_id
   LEFT JOIN reorder_suggestions rs ON rs.part_id = p.part_id`;
 
-// --- GET /scan?code= (y /scan/{codigo}) -----------------------------------------------
 // kind: location (U-ddd) · work_order (R + 9 dígitos [+ -N]) · part (P-<id> o sku; puede traer
 // varias piezas si el sku es compartido) · unknown. Siempre 200.
 
@@ -82,8 +78,6 @@ floorRoutes.get('/scan/*code', async (req: any, res: any) => {
   res.json(await scan(Array.isArray(segments) ? segments.join('/') : String(segments)));
 });
 
-// --- Ubicaciones -----------------------------------------------------------------------
-
 floorRoutes.get('/locations', async (req: any, res: any) => {
   const params: unknown[] = [];
   let where = 'TRUE';
@@ -122,9 +116,6 @@ floorRoutes.get('/locations/:id/stock', async (req: any, res: any) => {
   res.json({ location_id: loc.location_id, code: loc.code, name: loc.name, is_workbench: loc.is_workbench, items: rows });
 });
 
-// --- Piezas ----------------------------------------------------------------------------
-
-// GET /parts?search=&with_stock=true|false&limit=
 floorRoutes.get('/parts', async (req: any, res: any) => {
   const search = String(req.query.search ?? '').trim();
   const limit = Math.min(Number(req.query.limit) || 50, 1000);
@@ -154,7 +145,6 @@ floorRoutes.get('/parts/:part_id', async (req: any, res: any) => {
   res.json(rows[0]);
 });
 
-// Reservas activas de la pieza, de la más antigua a la más nueva (retiro en un toque).
 floorRoutes.get('/parts/:part_id/reservations', async (req: any, res: any) => {
   const id = intParam(req.params.part_id);
   const exists = id != null && (await pool.query(`SELECT 1 FROM parts WHERE part_id = $1`, [id])).rowCount;
@@ -170,9 +160,6 @@ floorRoutes.get('/parts/:part_id/reservations', async (req: any, res: any) => {
   res.json({ items: rows });
 });
 
-// --- Órdenes ---------------------------------------------------------------------------
-
-// GET /work-orders?status=open|all — open excluye las dadas de baja y las de final_release.
 floorRoutes.get('/work-orders', async (req: any, res: any) => {
   const where = req.query.status === 'all' ? 'TRUE' : `w.deleted_at IS NULL AND COALESCE(w.stage, '') <> 'final_release'`;
   const { rows } = await pool.query(

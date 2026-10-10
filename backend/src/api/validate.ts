@@ -1,8 +1,6 @@
 import Ajv2020 from 'ajv/dist/2020.js';
 import { unprocessable } from './errors.ts';
 
-// Validación de cuerpos POST con Ajv (sin dependencias extra). Inválido: 422 con "detail".
-
 const ajv = new Ajv2020({ allErrors: true, strict: false });
 
 const id = { type: 'integer', minimum: 1 };
@@ -73,7 +71,6 @@ export function validateBody<T = any>(kind: keyof typeof schemas, body: unknown)
   return body as T;
 }
 
-/** Entero positivo de un parámetro de ruta o 404 si no lo es. */
 export function intParam(value: string): number | null {
   return /^\d+$/.test(value) && Number(value) > 0 && Number(value) <= 2147483647 ? Number(value) : null;
 }

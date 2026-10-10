@@ -3,12 +3,10 @@ import { pool } from '../db.ts';
 import { onPublished } from '../kafka/publisher.ts';
 import { getHealth } from './health.ts';
 
-// GET /stream — Server-Sent Events (contrato compartido con el frontend, CLAUDE_frontend.md §6).
 // Mensajes SIN nombre de evento (un solo onmessage los recibe todos); cada uno es un JSON con:
 //  - { kind: "event", event }: cada salida stock.* publicada, con el sobre completo;
 //  - { kind: "kit_complete", work_order_id, code }: cuando todas las líneas de una orden quedan cubiertas;
 //  - { kind: "health", ...GET /health }: cada 5 segundos.
-// Latido (comentario) cada 15 s.
 
 export const streamRoutes = Router();
 
@@ -20,7 +18,6 @@ function broadcast(message: unknown) {
   for (const c of clients) c.write(chunk);
 }
 
-// Estado del kit por orden, para avisar solo cuando pasa a completo.
 const kitState = new Map<string, boolean>();
 const KIT_EVENTS = new Set(['stock.reserved', 'stock.shortage_detected', 'stock.shortage_resolved', 'stock.issued']);
 
@@ -62,7 +59,6 @@ onPublished(async (event: any) => {
   }
 });
 
-// Salud cada 5 s mientras haya alguien conectado.
 setInterval(async () => {
   if (!clients.size) return;
   try {

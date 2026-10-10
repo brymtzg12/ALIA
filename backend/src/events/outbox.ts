@@ -26,10 +26,6 @@ export type OutputEvent = {
   data: Record<string, unknown>;
 };
 
-/**
- * Escribe una salida stock.* en el outbox, dentro de la transacción del llamador.
- * Antes la valida contra su esquema: si no cumple es un bug, se registra y NO se publica.
- */
 export async function emit(db: Db, type: string, key: string, data: Record<string, unknown>): Promise<OutputEvent | null> {
   const event: OutputEvent = {
     event_id: randomUUID(),
@@ -53,10 +49,6 @@ export async function emit(db: Db, type: string, key: string, data: Record<strin
   return event;
 }
 
-/**
- * Manda el evento original a inventory.dlq con su misma key. Si no se pudo parsear,
- * se guarda el texto tal cual (como string JSON) y se publica sin transformar.
- */
 export async function sendToDlq(original: unknown, key: string | null, reason: string, db: Db | typeof pool = pool) {
   const eventId = (original as any)?.event_id;
   console.warn(`[dlq] ${eventId ?? '(sin event_id)'}: ${reason}`);

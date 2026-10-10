@@ -1,8 +1,6 @@
-// Seguimiento de "ya alcancé las marcas finales del arranque" para un conjunto de tópicos.
-// Se usa para el catálogo primero (regla 22) y para saber cuándo termina la reconstrucción.
 
 export class CatchUp {
-  private pending = new Map<string, number>(); // "topic|partition" -> high watermark
+  private pending = new Map<string, number>();
   private resolveDone!: () => void;
   readonly done: Promise<void>;
   private finished = false;
@@ -17,7 +15,6 @@ export class CatchUp {
     this.check();
   }
 
-  /** El consumidor ya tiene confirmado hasta este offset (siguiente a leer). */
   committed(topic: string, partition: number, nextOffset: number) {
     const k = `${topic}|${partition}`;
     const high = this.pending.get(k);
@@ -25,7 +22,6 @@ export class CatchUp {
     this.check();
   }
 
-  /** Se procesó el mensaje con este offset. */
   processed(topic: string, partition: number, offset: number) {
     this.committed(topic, partition, offset + 1);
   }

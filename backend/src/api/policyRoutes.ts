@@ -6,12 +6,6 @@ import { recomputeSuggestion } from '../domain/suggestions.ts';
 import { notFound, unprocessable } from './errors.ts';
 import { intParam, validateBody } from './validate.ts';
 
-// Políticas de mínimo y máximo por pieza (extra).
-//   GET    /policies                       vigentes, con el disponible y si están bajo su mínimo
-//   GET    /policies/recommended?lead_time_days=7   mínimo y máximo sugeridos por el uso histórico
-//   PUT    /policies/{part_id}             { min_qty, max_qty, lead_time_days? }
-//   DELETE /policies/{part_id}
-
 export const policyRoutes = Router();
 
 policyRoutes.get('/policies', async (_req: any, res: any) => {
@@ -47,7 +41,7 @@ policyRoutes.put('/policies/:part_id', async (req: any, res: any) => {
   await withTx(async (db) => {
     await lockPart(db, partId!);
     await savePolicy(db, policy);
-    await recomputeSuggestion(db, partId!); // puede nacer o cambiar la sugerencia por mínimo
+    await recomputeSuggestion(db, partId!);
   });
   const suggestion = (await pool.query(`SELECT suggested_quantity, reason FROM reorder_suggestions WHERE part_id = $1`, [partId])).rows[0] ?? null;
   res.json({ ...policy, suggestion });

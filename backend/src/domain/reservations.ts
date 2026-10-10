@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 import type { Db } from '../db.ts';
 import { emit } from '../events/outbox.ts';
 
-// Reservas y faltantes por (orden, línea de lista de partes).
 // Requisito: el llamador ya tiene el candado de part_stock de la pieza (ledger.lockParts).
 
 export type WorkOrderRef = { work_order_id: number; code: string };
@@ -15,13 +14,11 @@ export type LineRef = {
   inspectionItemId: number;
 };
 
-/** Disponible actual de la pieza (on_hand - reserved), leído con el candado ya tomado. */
 export async function availableOf(db: Db, partId: number): Promise<number> {
   const { rows } = await db.query(`SELECT on_hand - reserved AS available FROM part_stock WHERE part_id = $1`, [partId]);
   return rows[0]?.available ?? 0;
 }
 
-/** Aparta quantity de la pieza para la línea y emite stock.reserved. */
 export async function reserve(db: Db, line: LineRef & { partId: number }, quantity: number, reason: string) {
   if (quantity <= 0) return;
   const reservationId = randomUUID();
@@ -37,14 +34,12 @@ export async function reserve(db: Db, line: LineRef & { partId: number }, quanti
     part_id: line.partId,
     quantity,
     inspection_item_id: line.inspectionItemId,
-    // Extras:
     work_order_code: line.wo.code,
     bom_line_id: line.bomLineId,
     reason,
   });
 }
 
-/** Reservado activo y entregado de una línea. */
 export async function lineCoverage(db: Db, workOrderId: number, bomLineId: number) {
   const { rows } = await db.query(
     `SELECT COALESCE(SUM(quantity) FILTER (WHERE status = 'active'), 0)::int AS reserved,
@@ -100,7 +95,7 @@ export async function setShortage(db: Db, line: LineRef, missing: number | null,
     if (open) await db.query(`UPDATE shortages SET missing_quantity = 0, closed_at = now() WHERE shortage_id = $1`, [open.shortage_id]);
     return;
   }
-  if (open && open.missing_quantity === missing && open.part_id === line.partId) return; // sin cambio
+  if (open && open.missing_quantity === missing && open.part_id === line.partId) return;
 
   if (open) {
     await db.query(
@@ -120,14 +115,12 @@ export async function setShortage(db: Db, line: LineRef, missing: number | null,
     name: line.name,
     missing_quantity: missing,
     inspection_item_id: line.inspectionItemId,
-    // Extras:
     work_order_code: line.wo.code,
     bom_line_id: line.bomLineId,
     required,
   });
 }
 
-/** Cierra el faltante abierto de la línea sin emitir (anulación o baja). */
 export async function closeShortage(db: Db, workOrderId: number, bomLineId: number) {
   await db.query(
     `UPDATE shortages SET closed_at = now() WHERE work_order_id = $1 AND bom_line_id = $2 AND closed_at IS NULL`,
