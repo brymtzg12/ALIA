@@ -5,8 +5,6 @@ Requiere Node 24 y pnpm (`winget install pnpm.pnpm`). Desde esta carpeta:
     pnpm install
     pnpm dev
 
-pnpm usa versiones exactas y solo instala versiones publicadas hace más de 7 días, sin ejecutar scripts de instalación (`pnpm-workspace.yaml`).
-
 Abre https://localhost:5173. En celular usa https://<IP-de-la-laptop>:5173, acepta el certificado y permite la cámara. Ambos equipos deben compartir red.
 
 Para el celular o una demostración conviene la versión compilada: `pnpm build` y luego `pnpm preview --host --port 4173`, y abrir https://<IP-de-la-laptop>:4173. Carga más rápido por hotspot y evita la pantalla negra por caché que puede dejar el servidor de desarrollo al reiniciarse. Repite `pnpm build` cada vez que cambie el código. La IP cambia cuando la laptop cambia de red (`ipconfig`).
@@ -15,8 +13,8 @@ El backend debe estar encendido en http://localhost:8000. Vite dirige /api al ba
 
 ## Pantallas
 
-- Almacén: búsqueda, faltantes y sugerencias de compra.
-- Órdenes: materiales agrupados por kit, estados en español y colores.
+- Almacén: búsqueda, faltantes, sugerencias de compra y existencias por ubicación.
+- Órdenes: búsqueda por código y materiales agrupados por kit, con su estado.
 - Piezas: disponibilidad por ubicación y kardex.
 - Recepciones: relación manual con piezas sugeridas.
 - Piso: retiro, transferencia y conteo con cámara o entrada manual.
@@ -34,7 +32,7 @@ Sin ubicación escaneada, si la pieza tiene existencia en una sola ubicación se
 
 La cantidad se prellena con la reserva de la orden seleccionada, salvo que el operador escriba otra. El máximo retirable es el menor entre la existencia en la ubicación y el disponible global más la reserva propia de la orden. El backend vuelve a validar todo al registrar.
 
-El selector ¿Quién eres? permite guardar operadores en este navegador; no es autenticación. Los avisos en vivo incluyen faltantes, entradas y kit completo.
+El selector ¿Quién eres? guarda los operadores en este navegador para elegirlos con un toque. Los avisos en vivo incluyen faltantes, entradas y kit completo.
 
 Para conteos, cero significa cero unidades y una casilla vacía no modifica la pieza. Se necesita motivo y al menos una línea válida. Transferencias requieren origen distinto de destino y saldo suficiente en el origen.
 
@@ -52,4 +50,4 @@ Prueba con backend real:
 4. Con reserva antigua de dos y disponible global de dos, elegir la orden antigua y pedir seis debe bloquear el botón. La orden demo con seis sí permite retirar si hay saldo en la ubicación.
 5. Confirma que la orden actualiza issued/reserved. Revisa transferencias, conteos y políticas en un entorno de prueba.
 
-Para producción sirve dist/ con fallback a index.html y un proxy /api al backend que quite el prefijo y permita SSE. pnpm preview sí reutiliza la configuración de vite.config.ts (HTTPS local y proxy /api, incluido el SSE), pero es para pruebas locales y demostraciones, no para producción.
+pnpm preview reutiliza la configuración de vite.config.ts (HTTPS local y proxy /api, incluido el SSE) y es la opción para pruebas locales y demostraciones. Para producción se sirve dist/ con fallback a index.html y un proxy /api al backend que quite el prefijo y permita SSE.

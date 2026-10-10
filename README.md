@@ -55,18 +55,18 @@ docker compose run --rm contract-tests --api http://host.docker.internal:8000
 | Detener el kit | `cd hackathon-inventario-kit && docker compose stop` |
 | Dejar todo limpio después de las pruebas de contrato | `docker compose stop backend`, luego en `hackathon-inventario-kit/`: `RESET=1 SPEED=0 docker compose up -d --force-recreate simulator` (espera `replay terminado: 1742 eventos` en `docker compose logs simulator`), y de vuelta en la raíz: `docker compose down -v` y `docker compose up -d` |
 
-> Solo debe haber **un** servicio de inventario conectado al broker: no corras a la vez ALIA en Docker y el
-> modo desarrollo (`pnpm dev`), o las pruebas de contrato verán eventos de los dos.
+> Mantén un solo servicio de inventario conectado al broker a la vez: ALIA en Docker o el modo
+> desarrollo (`pnpm dev`), para que las pruebas de contrato vean solo los eventos de uno.
 >
-> Usa `stop` y no `down` en el kit: Redpanda guarda los tópicos en un volumen sin nombre que se
-> pierde al borrar el contenedor.
+> Para detener el kit usa `docker compose stop`: así se conservan los tópicos, que Redpanda guarda
+> en el volumen de su contenedor.
 
 Las respuestas a cómo relacionamos compras, cómo manejamos kits, cómo evitamos reservas dobles y cómo
-garantizamos idempotencia están en **[DECISIONES.md](DECISIONES.md)** (una página).
+garantizamos idempotencia están en **[DECISIONES.md](DECISIONES.md)**.
 
-## Extras del nivel avanzado
+## Funciones avanzadas
 
-| Extra pedido | Dónde verlo en ALIA |
+| Función | Dónde verla en ALIA |
 |---|---|
 | Pronóstico de demanda por modelo | Pantalla **Pronóstico** (`/pronostico`) · `GET /forecast/models/:id` y `GET /forecast/open-orders` |
 | Valuación a costo promedio (MXN y USD) | Pantalla **Valuación** (`/valuacion`) · `GET /valuation`. USD se convierte con un tipo de cambio fijo (`USD_MXN`) |
@@ -77,8 +77,8 @@ garantizamos idempotencia están en **[DECISIONES.md](DECISIONES.md)** (una pág
 ## Recursos de Roceel
 
 ALIA está construido sobre el **kit técnico que nos entregó Roceel**, en la carpeta
-`hackathon-inventario-kit/`. Esa carpeta es material de Roceel y **no se modifica**; nuestro código
-vive en `backend/` y `frontend/`.
+`hackathon-inventario-kit/`. Esa carpeta contiene el material de Roceel; nuestro código vive en
+`backend/` y `frontend/`.
 
 | Recurso de Roceel | Dónde | Cómo lo usa ALIA |
 |---|---|---|
@@ -116,9 +116,9 @@ Las decisiones técnicas están en [DECISIONES.md](DECISIONES.md).
 |---|---|
 | `backend/` | Servicio de inventario de ALIA (Node 24 + TypeScript, PostgreSQL, Kafka), puerto 8000 |
 | `frontend/` | App web de ALIA (React + Mantine): pantallas de consulta y app de piso con escaneo, puerto 5173 |
-| `hackathon-inventario-kit/` | Kit técnico de Roceel: contrato, simulador, datos, pruebas y etiquetas. **No se modifica.** |
+| `hackathon-inventario-kit/` | Kit técnico de Roceel: contrato, simulador, datos, pruebas y etiquetas |
 | `docker-compose.yml` | ALIA completo en contenedores (PostgreSQL, backend y app), conectado a la red del kit |
-| `DECISIONES.md` | Decisiones técnicas en una página |
+| `DECISIONES.md` | Decisiones técnicas del sistema |
 
 Equipo: Bryan (backend), Baruk (frontend), Maddox (integración) y Javier (producto).
 
@@ -134,14 +134,10 @@ el puerto 8000.
 |---|---|---|
 | **Docker Desktop** | Kafka, simulador, PostgreSQL y pruebas de contrato | https://www.docker.com/products/docker-desktop |
 | **Node.js 24** o superior | Backend y frontend | `winget install OpenJS.NodeJS` |
-| **pnpm** | Gestor de paquetes (no usamos npm) | `winget install pnpm.pnpm` |
+| **pnpm** | Gestor de paquetes | `winget install pnpm.pnpm` |
 | **Git** | Clonar el repositorio | `winget install Git.Git` |
 
 Comprueba las versiones con `node -v` (debe ser v24 o mayor), `pnpm -v` y `docker -v`.
-
-> **Sobre pnpm:** los dos proyectos usan versiones exactas, solo instalan paquetes publicados hace
-> más de 7 días y bloquean los scripts de instalación (`pnpm-workspace.yaml`). Es a propósito,
-> para proteger la cadena de dependencias.
 
 ### Instalación (una sola vez)
 
@@ -219,16 +215,16 @@ Para ver cómo queda en un celular sin tener uno a la mano: **F12 → Ctrl+Shift
 
 ## Verlo en el celular
 
-El celular se conecta a la laptop donde corre todo; no se instala nada en el teléfono.
+El celular abre la app en su navegador, conectado a la laptop donde corre todo.
 
 ### Opción recomendada: versión compilada (puerto 4173)
 
 Si levantaste ALIA con Docker, la app ya corre compilada en el puerto 4173: salta directo a *Pasos*.
 
-En el celular conviene usar la versión compilada de la app y no el servidor de desarrollo
-(`pnpm dev`, puerto 5173). El servidor de desarrollo manda cientos de archivos sueltos y se apoya en
-la caché del navegador; por un hotspot el iPhone puede quedarse en **pantalla negra**. La versión
-compilada es un solo paquete: carga más rápido y no cambia a media demostración.
+En el celular conviene usar la versión compilada de la app (puerto 4173). Es un solo paquete: carga
+más rápido por un hotspot y se mantiene estable durante una demostración. El servidor de desarrollo
+(`pnpm dev`, puerto 5173) manda muchos archivos sueltos y, por hotspot, el iPhone puede quedarse en
+**pantalla negra**.
 
 ```powershell
 cd frontend
@@ -266,7 +262,7 @@ de `/api` al backend del puerto 8000, incluidos los avisos en vivo. El backend d
 | Pantalla negra o en blanco | Caché vieja del navegador tras reiniciar el servidor. Abre una **pestaña privada**, borra la caché o usa la versión compilada (4173) |
 | Funciona en la laptop pero no en el celular, con la IP correcta | **Firewall de Windows:** en *Panel de control → Firewall de Windows Defender → Permitir una aplicación*, marca **Node.js** en **Privada y Pública**. Windows aplica el permiso según el tipo de red (pública o privada), así que cambiar el tipo de red puede bloquearlo |
 | Sigue sin cargar en una WiFi de evento, escuela u oficina | Esas redes suelen **aislar a los dispositivos entre sí**. Usa el hotspot del celular |
-| La cámara no abre | La dirección debe empezar con **https**. Los iPhone no permiten la cámara en páginas http |
+| La cámara no abre | La dirección debe empezar con **https**: el navegador solo permite la cámara en páginas seguras |
 
 ## Pantallas de la app
 
@@ -361,7 +357,7 @@ Las rutas principales:
 |---|---|
 | `docker` no responde o falla `compose up` | Abre Docker Desktop y espera a *Engine running* |
 | El backend dice `Falta la variable de entorno DATABASE_URL` | Falta `backend/.env`: cópialo de `.env.example` |
-| El backend no conecta a la base | `docker compose up -d` en `backend/`; la base usa el puerto **5433**, no el 5432 |
+| El backend no conecta a la base | `docker compose up -d` en `backend/`; la base usa el puerto **5433** |
 | `/health` muestra `rebuilding: true` o `lag` mayor a 0 | Todavía está procesando; espera unos segundos y recarga |
 | La app muestra "No se pudo cargar" o "La API no devolvió JSON" | El backend no está encendido en el puerto 8000 |
 | No llegan avisos en vivo | Revisa http://localhost:8000/stream y que el kit de Roceel esté arriba |
