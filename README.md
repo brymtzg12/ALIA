@@ -112,15 +112,15 @@ Las decisiones técnicas están en [DECISIONES.md](DECISIONES.md).
 
 ## Estructura del repositorio
 
-| Carpeta | Qué es | Rama de trabajo |
-|---|---|---|
-| `backend/` | Servicio de inventario de ALIA (Node 24 + TypeScript, PostgreSQL, Kafka), puerto 8000 | `backend` |
-| `frontend/` | App web de ALIA (React + Mantine): pantallas de consulta y app de piso con escaneo, puerto 5173 | `frontend` |
-| `hackathon-inventario-kit/` | Kit técnico de Roceel: contrato, simulador, datos, pruebas y etiquetas. **No se modifica.** | `main` |
-| `docker-compose.yml` | ALIA completo en contenedores (PostgreSQL, backend y app), conectado a la red del kit | — |
-| `DECISIONES.md` | Decisiones técnicas en una página | — |
+| Carpeta | Qué es |
+|---|---|
+| `backend/` | Servicio de inventario de ALIA (Node 24 + TypeScript, PostgreSQL, Kafka), puerto 8000 |
+| `frontend/` | App web de ALIA (React + Mantine): pantallas de consulta y app de piso con escaneo, puerto 5173 |
+| `hackathon-inventario-kit/` | Kit técnico de Roceel: contrato, simulador, datos, pruebas y etiquetas. **No se modifica.** |
+| `docker-compose.yml` | ALIA completo en contenedores (PostgreSQL, backend y app), conectado a la red del kit |
+| `DECISIONES.md` | Decisiones técnicas en una página |
 
-Ramas por rol: `backend` (Bryan), `frontend` (Baruk), `integracion` (Maddox), `producto` (Javier).
+Equipo: Bryan (backend), Baruk (frontend), Maddox (integración) y Javier (producto).
 
 ## Modo desarrollo (Node.js + pnpm)
 
