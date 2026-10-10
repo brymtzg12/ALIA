@@ -63,6 +63,7 @@ export function Piso() {
     onError: () => { void availability.refetch(); void reservations.refetch(); },
   });
   function choosePart(value: string) { setPart(value); setQuantity(null); issue.reset(); }
+  const reservedOrders = [...reserves].filter(([, quantity]) => quantity > 0).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
   const codes = [...new Set([...reserves.keys(), ...(orders.data?.items.map(row => String(row.code)) ?? []), ...(order ? [order] : [])])];
   return <><PageHeader eyebrow="Operación de piso" title="Retirar piezas" description="Escanea ubicación, pieza y orden. Revisa la orden y la cantidad antes de confirmar." /><FloorNav />
     <div className={floor.steps}>
@@ -93,7 +94,7 @@ export function Piso() {
     <Section step={4} title="Orden de trabajo" tone="panel">
     <QueryState query={orders} /><Select searchable size="lg" label="Orden de trabajo" disabled={issue.isPending} placeholder="Escanea o elige la orden" value={selectedOrder || null} onChange={value => { setOrder(value ?? ''); setQuantity(null); issue.reset(); }} data={codes.map(value => ({ value, label: value + ' · ' + (reserves.get(value) ?? 0) + ' apartadas' }))} />
     {!order && recommendation && <Alert color="blue">Orden sugerida por su reserva: {recommendation}. Confirma que corresponde a tu trabajo.</Alert>}
-    {isInteger(part) && reservations.isSuccess && !selectedOrder && <Alert color="orange">Hay varias órdenes posibles o ninguna con reserva suficiente. Escanea o elige la orden antes de retirar.</Alert>}
+    {isInteger(part) && reservations.isSuccess && !selectedOrder && <Alert color="orange">Hay varias órdenes posibles o ninguna con reserva suficiente. Escanea o elige la orden antes de retirar.{reservedOrders.length > 0 && <><Text size="sm" mt="sm">Esta pieza está apartada para {reservedOrders.length === 1 ? 'esta orden' : 'estas ' + reservedOrders.length + ' órdenes'}. Toca la de tu trabajo:</Text><Group gap="xs" mt="xs">{reservedOrders.map(([code, quantity]) => <Button key={code} size="md" variant="default" disabled={issue.isPending} onClick={() => { setOrder(code); setQuantity(null); issue.reset(); }}><Code>{code}</Code>&nbsp;· {quantity} {quantity === 1 ? 'apartada' : 'apartadas'}</Button>)}</Group></>}</Alert>}
     {selectedOrder && <Text fw={600} size="lg" className={floor.callout}>Orden <Code>{selectedOrder}</Code>: {ownReserved} apartadas para esta pieza.</Text>}
     </Section>
     <Section step={5} title="Cantidad" tone="panel">
