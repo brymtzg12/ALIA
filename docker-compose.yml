@@ -1,0 +1,52 @@
+name: alia
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: alia
+      POSTGRES_PASSWORD: alia
+      POSTGRES_DB: alia
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U alia -d alia"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgres://alia:alia@postgres:5432/alia
+      KAFKA_BROKERS: redpanda:9092
+      CONTRACT_DIR: /contract
+      USD_MXN: "18.50"
+    volumes:
+      - ./hackathon-inventario-kit/contract:/contract:ro
+      - ./backend/data:/app/data
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - default
+      - kit
+
+  frontend:
+    build: ./frontend
+    environment:
+      API_URL: http://backend:8000
+    ports:
+      - "4173:4173"
+    depends_on:
+      - backend
+
+networks:
+  kit:
+    external: true
+    name: hackathon-inventario-kit_default
+
+volumes:
+  pgdata:

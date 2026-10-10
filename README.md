@@ -14,6 +14,52 @@ el piso del almacén, con escaneo de etiquetas desde la cámara del celular.
 - **Inteligente:** relaciona compras con el catálogo, sugiere mínimos y máximos y pronostica la demanda por modelo.
 - **Automatizado:** todo ocurre solo a partir de los eventos del taller, y avisa en vivo cuando falta algo o un kit queda completo.
 
+## Levantar ALIA con un comando
+
+Solo necesitas **Docker** (Docker Desktop en Windows o macOS). Primero se levanta el kit de Roceel
+con su propio comando y, sobre él, ALIA completo (base de datos, backend y app) con **un comando**:
+
+```bash
+git clone https://github.com/brymtzg12/almacenInteligente.git
+cd almacenInteligente
+
+# Kit de Roceel: Redpanda, consola y simulador del taller
+cd hackathon-inventario-kit && docker compose up -d && cd ..
+
+# ALIA, sobre el kit
+docker compose up -d --build
+```
+
+El primer arranque construye las imágenes (1 a 2 minutos). Después:
+
+| Dirección | Qué es |
+|---|---|
+| **https://localhost:4173** | **App ALIA** (acepta el aviso del certificado local; también funciona desde el celular con la IP de la laptop) |
+| http://localhost:8000/health | Estado del backend: listo cuando dice `"catalog_ready": true` y `"rebuilding": false` |
+| http://localhost:8090 | Panel del simulador de Roceel |
+
+ALIA se conecta a la red del kit para hablar con Redpanda, crea su base y, si los tópicos ya tienen
+historia, la relee desde el inicio (catálogo primero). Las pruebas de contrato del kit se corren como
+indica Roceel, con la API en el puerto 8000:
+
+```bash
+cd hackathon-inventario-kit
+docker compose run --rm contract-tests --api http://host.docker.internal:8000
+```
+
+| Para | Comando (desde la raíz del repo) |
+|---|---|
+| Ver los registros del backend | `docker compose logs -f backend` |
+| Detener ALIA conservando sus datos | `docker compose stop` (y `docker compose start` para volver) |
+| Reconstruir la base desde cero | `docker compose down -v` y luego `docker compose up -d` |
+| Detener el kit | `cd hackathon-inventario-kit && docker compose stop` |
+
+> Usa `stop` y no `down` en el kit: Redpanda guarda los tópicos en un volumen sin nombre que se
+> pierde al borrar el contenedor.
+
+Las respuestas a cómo relacionamos compras, cómo manejamos kits, cómo evitamos reservas dobles y cómo
+garantizamos idempotencia están en **[DECISIONES.md](DECISIONES.md)** (una página).
+
 ## Recursos de Roceel
 
 ALIA está construido sobre el **kit técnico que nos entregó Roceel**, en la carpeta
@@ -48,14 +94,7 @@ vive en `backend/` y `frontend/`.
 3. La **app de ALIA** consulta la API y se actualiza en vivo. En el piso, el operador escanea
    ubicación, pieza y orden para registrar salidas, transferencias y conteos.
 
-### Decisiones técnicas clave
-
-- **Inventario por componente, no por kit.** Cada pieza tiene su saldo, reserva y faltante; el kit es una agrupación para mostrar y está completo cuando todas sus líneas están reservadas o entregadas.
-- **Libro mayor de movimientos.** El saldo es la suma de los movimientos. Borrar la base y releer los eventos desde el inicio da exactamente el mismo saldo por pieza y ubicación.
-- **Cada evento se procesa una sola vez.** El `event_id` se registra en la misma transacción que sus efectos y sus salidas (patrón *outbox*), así que un evento repetido no cambia nada. Los eventos que llegan fuera de orden esperan y se reintentan solos.
-- **Sin carreras por la última pieza.** Toda operación que mueve saldo bloquea la fila de la pieza antes de calcular el disponible; se reserva lo que hay y el resto queda como faltante.
-- **Nunca adivinar al relacionar compras.** Solo se relaciona sola una compra que coincide con exactamente una pieza; las demás van a revisión manual con candidatos sugeridos.
-- **Dependencias mínimas.** El backend usa 5 librerías con versiones fijas.
+Las decisiones técnicas están en [DECISIONES.md](DECISIONES.md).
 
 ## Estructura del repositorio
 
@@ -64,10 +103,18 @@ vive en `backend/` y `frontend/`.
 | `backend/` | Servicio de inventario de ALIA (Node 24 + TypeScript, PostgreSQL, Kafka), puerto 8000 | `backend` |
 | `frontend/` | App web de ALIA (React + Mantine): pantallas de consulta y app de piso con escaneo, puerto 5173 | `frontend` |
 | `hackathon-inventario-kit/` | Kit técnico de Roceel: contrato, simulador, datos, pruebas y etiquetas. **No se modifica.** | `main` |
+| `docker-compose.yml` | ALIA completo en contenedores (PostgreSQL, backend y app), conectado a la red del kit | — |
+| `DECISIONES.md` | Decisiones técnicas en una página | — |
 
 Ramas por rol: `backend` (Bryan), `frontend` (Baruk), `integracion` (Maddox), `producto` (Javier).
 
-## Requisitos
+## Modo desarrollo (Node.js + pnpm)
+
+Para trabajar en el código, con recarga automática al guardar. Si solo quieres usar ALIA, basta con
+[Levantar ALIA con un comando](#levantar-alia-con-un-comando). No uses los dos modos a la vez: comparten
+el puerto 8000.
+
+### Requisitos
 
 | Herramienta | Para qué | Instalación en Windows |
 |---|---|---|
@@ -82,7 +129,7 @@ Comprueba las versiones con `node -v` (debe ser v24 o mayor), `pnpm -v` y `docke
 > más de 7 días y bloquean los scripts de instalación (`pnpm-workspace.yaml`). Es a propósito,
 > para proteger la cadena de dependencias.
 
-## Instalación (una sola vez)
+### Instalación (una sola vez)
 
 ```powershell
 git clone https://github.com/brymtzg12/almacenInteligente.git
@@ -110,7 +157,7 @@ El archivo `backend/.env` ya trae valores que funcionan en local:
 | `CONTRACT_DIR` | `../hackathon-inventario-kit/contract` | Contrato de Roceel que ALIA valida al arrancar |
 | `USD_MXN` | `18.50` | Tipo de cambio fijo para la valuación |
 
-## Arranque (cada vez)
+### Arranque (cada vez)
 
 Abre **Docker Desktop** y espera a que diga *Engine running*. Después usa tres terminales:
 
@@ -147,7 +194,7 @@ así que los números siguen cambiando un rato.
 
 ## Verlo en la PC
 
-1. Abre **https://localhost:5173** en Chrome o Edge.
+1. Abre **https://localhost:4173** (con Docker) o **https://localhost:5173** (modo desarrollo) en Chrome o Edge.
 2. La primera vez el navegador avisa que el certificado no es de confianza. Es un certificado local
    que genera Vite (se necesita HTTPS para usar la cámara). Elige **Configuración avanzada → Continuar**.
 3. La app abre en **Almacén**. Desde el menú lateral llegas a todas las pantallas; el botón
@@ -161,6 +208,8 @@ Para ver cómo queda en un celular sin tener uno a la mano: **F12 → Ctrl+Shift
 El celular se conecta a la laptop donde corre todo; no se instala nada en el teléfono.
 
 ### Opción recomendada: versión compilada (puerto 4173)
+
+Si levantaste ALIA con Docker, la app ya corre compilada en el puerto 4173: salta directo a *Pasos*.
 
 En el celular conviene usar la versión compilada de la app y no el servidor de desarrollo
 (`pnpm dev`, puerto 5173). El servidor de desarrollo manda cientos de archivos sueltos y se apoya en
@@ -310,6 +359,7 @@ Las rutas principales:
 
 | Documento | Contenido |
 |---|---|
+| [`DECISIONES.md`](DECISIONES.md) | Decisiones técnicas: compras y catálogo, kits, reservas dobles e idempotencia |
 | [`frontend/README.md`](frontend/README.md) | Detalle de la app, reglas de retiro y validación |
 | [`hackathon-inventario-kit/README.md`](hackathon-inventario-kit/README.md) | Kit técnico de Roceel: simulador, contrato y pruebas |
 | [`hackathon-inventario-kit/contract/README.md`](hackathon-inventario-kit/contract/README.md) | Contrato de eventos y API de Roceel, estándar de etiquetas |
