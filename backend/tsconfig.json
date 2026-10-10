@@ -1,0 +1,19 @@
+{
+  // Solo para el editor: Node 24 ejecuta los .ts directamente (type stripping).
+  // Por eso solo se permite sintaxis "borrable": nada de enum, namespace ni
+  // parameter properties, e importaciones con extensión .ts.
+  "compilerOptions": {
+    "target": "ES2024",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "noEmit": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": ["src"]
+}

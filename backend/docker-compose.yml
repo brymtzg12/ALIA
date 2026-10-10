@@ -1,0 +1,21 @@
+# Solo PostgreSQL. Puerto 5433 en la laptop para no chocar con un Postgres local.
+services:
+  postgres:
+    image: postgres:17
+    container_name: kitlisto-postgres
+    environment:
+      POSTGRES_USER: kitlisto
+      POSTGRES_PASSWORD: kitlisto
+      POSTGRES_DB: kitlisto
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kitlisto -d kitlisto"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:
