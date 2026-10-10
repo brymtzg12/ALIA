@@ -1,45 +1,17 @@
-import { AppShell, Burger, Group, NavLink, Title, Button } from '@mantine/core';
+import { AppShell, Burger, Group, NavLink, ScrollArea, Title, Button } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-
+const links = [
+  ['/almacen', 'Almacén'], ['/ordenes', 'Órdenes de trabajo'], ['/recepciones', 'Recepciones'],
+  ['/piso/retirar', 'Retirar piezas'], ['/piso/transferir', 'Transferir piezas'], ['/piso/contar', 'Contar piezas'],
+  ['/pronostico', 'Pronóstico'], ['/valuacion', 'Valuación'], ['/rotacion', 'Rotación'], ['/politicas', 'Políticas'], ['/salud', 'Salud del sistema'],
+];
 export default function AppLayout() {
-  const [opened, { toggle }] = useDisclosure();
+  const [opened, { toggle, close }] = useDisclosure();
   const location = useLocation();
-
-  return (
-    <AppShell
-      header={{ height: 60 }}
-      navbar={{
-        width: 250,
-        breakpoint: 'sm',
-        collapsed: { mobile: !opened },
-      }}
-      padding="md"
-    >
-      <AppShell.Header>
-        <Group h="100%" px="md" justify="space-between">
-          <Group>
-            <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Title order={3}>KitListo</Title>
-          </Group>
-          <Button component={Link} to="/piso" color="blue" variant="light">
-            Modo piso
-          </Button>
-        </Group>
-      </AppShell.Header>
-
-      <AppShell.Navbar p="md">
-        <NavLink component={Link} to="/almacen" label="Almacén" active={location.pathname === '/almacen'} />
-        <NavLink component={Link} to="/ordenes" label="Órdenes de Trabajo" active={location.pathname === '/ordenes'} />
-        <NavLink component={Link} to="/recepciones" label="Recepciones" active={location.pathname === '/recepciones'} />
-        <NavLink component={Link} to="/salud" label="Salud del Sistema" active={location.pathname === '/salud'} />
-        <NavLink component={Link} to="/pronostico" label="Pronóstico" active={location.pathname === '/pronostico'} />
-      </AppShell.Navbar>
-
-      <AppShell.Main>
-        {/* Aquí es donde React Router inyectará la pantalla de Almacén y las demás */}
-        <Outlet />
-      </AppShell.Main>
-    </AppShell>
-  );
+  return <AppShell header={{ height: 60 }} navbar={{ width: 250, breakpoint: 'sm', collapsed: { mobile: !opened } }} padding="md">
+    <AppShell.Header><Group h="100%" px="md" justify="space-between"><Group><Burger aria-label="Abrir menú" opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" /><Title order={3}>KitListo</Title></Group><Button component={Link} to="/piso/retirar" color="blue" variant="light" onClick={close}>Modo piso</Button></Group></AppShell.Header>
+    <AppShell.Navbar p="md"><ScrollArea>{links.map(([path, label]) => <NavLink key={path} component={Link} to={path} label={label} active={location.pathname === path || location.pathname.startsWith(path + '/')} onClick={close} />)}</ScrollArea></AppShell.Navbar>
+    <AppShell.Main><Outlet /></AppShell.Main>
+  </AppShell>;
 }

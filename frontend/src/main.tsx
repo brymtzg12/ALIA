@@ -11,6 +11,8 @@ import LiveUpdates from './components/LiveUpdates';
 import AlmacenScreen from './pages/Almacen';
 import { Ordenes, Materiales, Pieza, Salud, Pronostico } from './pages/Consultas';
 import { Piso, Recepciones } from './pages/Operaciones';
+import { Transferir, Contar } from './pages/PisoExtras';
+import { Valuacion, Rotacion, Politicas } from './pages/Analitica';
 const queryClient = new QueryClient();
 const router = createBrowserRouter([{
   path: '/', element: <AppLayout />, children: [
@@ -24,6 +26,11 @@ const router = createBrowserRouter([{
     { path: 'pronostico', element: <Pronostico /> },
     { path: 'piso', element: <Navigate to="/piso/retirar" replace /> },
     { path: 'piso/retirar', element: <Piso /> },
+    { path: 'piso/transferir', element: <Transferir /> },
+    { path: 'piso/contar', element: <Contar /> },
+    { path: 'valuacion', element: <Valuacion /> },
+    { path: 'rotacion', element: <Rotacion /> },
+    { path: 'politicas', element: <Politicas /> },
     { path: '*', element: <Container><Title>Página no encontrada</Title><Text>Revisa la dirección.</Text><Button component={Link} to="/almacen">Volver al almacén</Button></Container> },
   ],
 }]);
