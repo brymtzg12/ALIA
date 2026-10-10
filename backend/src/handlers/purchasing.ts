@@ -12,7 +12,7 @@ export const purchaseItemReceived: Handler = {
   async missingRefs(db, ev) {
     const d = ev.data;
     if (d.purpose === 'customer_order') return null;
-    const match = await matchPartNumber(db, d.part_number);
+    const match = await matchPartNumber(db, d.part_number, d.description);
     if (match.partId != null) return null;
     return (await isCatalogInSync()) ? null : 'esperando a que el catálogo alcance su marca final';
   },
@@ -22,7 +22,7 @@ export const purchaseItemReceived: Handler = {
     // Regla 9: material para un cliente. No entra, no surte y no emite nada.
     if (d.purpose === 'customer_order') return 'ignored';
 
-    const match = await matchPartNumber(db, d.part_number);
+    const match = await matchPartNumber(db, d.part_number, d.description);
     if (match.partId == null) {
       // Regla 10: ninguna o varias piezas. Queda para revisión manual.
       const ins = await db.query(
@@ -63,7 +63,7 @@ export const purchaseItemReceived: Handler = {
       receivedAt: d.received_at,
       workOrderCode: d.work_order_code,
       origin: 'event',
-      extra: { part_number: d.part_number, request_number: d.request_number },
+      extra: { part_number: d.part_number, request_number: d.request_number, match_rule: match.rule },
     });
     if (!movement) return 'ignored'; // esa línea de compra ya había entrado
   },
