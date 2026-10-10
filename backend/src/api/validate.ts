@@ -41,6 +41,15 @@ const schemas = {
       },
     },
   },
+  policy: {
+    type: 'object',
+    required: ['min_qty', 'max_qty'],
+    properties: {
+      min_qty: { type: 'integer', minimum: 0 },
+      max_qty: { type: 'integer', minimum: 1 },
+      lead_time_days: { anyOf: [{ type: 'integer', minimum: 0 }, { type: 'null' }] },
+    },
+  },
   resolve: {
     type: 'object',
     required: ['part_id'],

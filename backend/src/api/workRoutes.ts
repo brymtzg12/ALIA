@@ -102,13 +102,15 @@ workRoutes.get('/shortages', async (req: any, res: any) => {
 // GET /reorder-suggestions — sugerencias vigentes.
 workRoutes.get('/reorder-suggestions', async (_req: any, res: any) => {
   const { rows } = await pool.query(
-    `SELECT r.part_id, p.sku, p.name, r.suggested_quantity, r.work_order_ids,
+    `SELECT r.part_id, p.sku, p.name, r.suggested_quantity, r.work_order_ids, r.reason,
+            pol.min_qty, pol.max_qty,
             ARRAY(SELECT w.code FROM unnest(r.work_order_ids) WITH ORDINALITY u(id, i)
                   JOIN work_orders w ON w.work_order_id = u.id ORDER BY u.i) AS work_order_codes,
             COALESCE(ps.on_hand, 0) - COALESCE(ps.reserved, 0) AS available,
             r.updated_at
      FROM reorder_suggestions r LEFT JOIN parts p ON p.part_id = r.part_id
      LEFT JOIN part_stock ps ON ps.part_id = r.part_id
+     LEFT JOIN policies pol ON pol.part_id = r.part_id
      ORDER BY r.updated_at DESC, r.part_id`,
   );
   res.json({ items: rows });

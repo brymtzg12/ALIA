@@ -6,6 +6,7 @@ import { ledgerRoutes } from './ledgerRoutes.ts';
 import { workRoutes } from './workRoutes.ts';
 import { floorRoutes } from './floorRoutes.ts';
 import { analyticsRoutes } from './analyticsRoutes.ts';
+import { policyRoutes } from './policyRoutes.ts';
 import { streamClientCount, streamRoutes } from './stream.ts';
 
 export function createApp() {
@@ -15,7 +16,7 @@ export function createApp() {
   // CORS abierto para el frontend en desarrollo.
   app.use((req: any, res: any, next: any) => {
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
     if (req.method === 'OPTIONS') return res.sendStatus(204);
     next();
@@ -56,6 +57,7 @@ export function createApp() {
   app.use(workRoutes);
   app.use(floorRoutes);
   app.use(analyticsRoutes);
+  app.use(policyRoutes);
   app.use(streamRoutes);
 
   // Ruta desconocida.

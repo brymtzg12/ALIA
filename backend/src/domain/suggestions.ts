@@ -1,11 +1,15 @@
 import type { Db } from '../db.ts';
 import { emit } from '../events/outbox.ts';
+import { getPolicy } from './policies.ts';
 
-// Sugerencias de compra (regla 18). Una pieza con faltantes abiertos tiene una sugerencia:
-//  - suggested_quantity = suma de missing_quantity no nulos, + 1 por cada faltante sin cantidad
-//    (para que la sugerencia exista); nunca menor que lo que falta;
-//  - work_order_ids = las órdenes de esos faltantes, sin repetir y ordenadas.
-// Se emite stock.reorder_suggested solo cuando nace o cambia. Sin faltantes se borra sin emitir.
+// Sugerencias de compra (regla 18). Una pieza tiene sugerencia vigente si:
+//  a) tiene faltantes abiertos: cantidad = suma de missing_quantity no nulos, + 1 por cada faltante
+//     sin cantidad (para que exista); órdenes = las de esos faltantes, sin repetir y ordenadas;
+//  b) o queda bajo su mínimo (si tiene política): lo que queda disponible después de cubrir los
+//     faltantes es menor que el mínimo. Entonces se sugiere lo necesario para volver al máximo,
+//     y nunca menos que lo que falta.
+// Se emite stock.reorder_suggested solo cuando nace o cambia (cantidad u órdenes). Si ya no hay
+// motivo, se borra sin emitir.
 // Requisito: el llamador tiene el candado de part_stock de la pieza.
 
 export async function recomputeSuggestion(db: Db, partId: number | null) {
@@ -26,22 +30,34 @@ export async function recomputeSuggestion(db: Db, partId: number | null) {
     [partId],
   );
 
-  if (!workOrderIds.length) {
+  const forShortages = workOrderIds.length ? Math.max(1, missing + unknown) : 0;
+
+  // Política mínimo/máximo.
+  let forPolicy = 0;
+  let projected: number | null = null;
+  const policy = await getPolicy(db, partId);
+  if (policy) {
+    const stock = await db.query(`SELECT on_hand - reserved AS available FROM part_stock WHERE part_id = $1`, [partId]);
+    projected = (stock.rows[0]?.available ?? 0) - missing; // lo que queda tras cubrir los faltantes
+    if (projected < policy.min_qty) forPolicy = Math.max(1, policy.max_qty - projected);
+  }
+
+  const quantity = Math.max(forShortages, forPolicy);
+  if (quantity <= 0) {
     if (current.rowCount) await db.query(`DELETE FROM reorder_suggestions WHERE part_id = $1`, [partId]);
     return;
   }
-
-  const quantity = Math.max(1, missing + unknown);
+  const reason = forShortages && forPolicy ? 'shortage_and_min' : forPolicy ? 'below_min' : 'shortage';
 
   const prev = current.rows[0];
   if (prev && prev.suggested_quantity === quantity && sameIds(prev.work_order_ids, workOrderIds)) return;
 
   await db.query(
-    `INSERT INTO reorder_suggestions (part_id, suggested_quantity, work_order_ids, updated_at)
-     VALUES ($1, $2, $3, now())
+    `INSERT INTO reorder_suggestions (part_id, suggested_quantity, work_order_ids, reason, updated_at)
+     VALUES ($1, $2, $3, $4, now())
      ON CONFLICT (part_id) DO UPDATE SET suggested_quantity = EXCLUDED.suggested_quantity,
-       work_order_ids = EXCLUDED.work_order_ids, updated_at = now()`,
-    [partId, quantity, workOrderIds],
+       work_order_ids = EXCLUDED.work_order_ids, reason = EXCLUDED.reason, updated_at = now()`,
+    [partId, quantity, workOrderIds, reason],
   );
   const part = await db.query(`SELECT sku, name FROM parts WHERE part_id = $1`, [partId]);
   await emit(db, 'stock.reorder_suggested', `part:${partId}`, {
@@ -53,6 +69,8 @@ export async function recomputeSuggestion(db: Db, partId: number | null) {
     name: part.rows[0]?.name ?? null,
     missing_quantity: missing,
     shortages_without_quantity: unknown,
+    reason,
+    ...(policy ? { min_qty: policy.min_qty, max_qty: policy.max_qty, projected_available: projected } : {}),
   });
 }
 

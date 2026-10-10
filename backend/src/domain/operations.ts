@@ -4,6 +4,7 @@ import { emit } from '../events/outbox.ts';
 import { conflict, notFound } from '../api/errors.ts';
 import { apiMovementTime, locationOnHand, lockPart, lockParts, recordMovement, type Movement } from './ledger.ts';
 import { registerReceipt } from './receiving.ts';
+import { recomputeSuggestion } from './suggestions.ts';
 
 // Operaciones de piso que nacen en la API: salida, transferencia, conteo y recepción resuelta.
 // Cada salida stock.* lleva origin "api" y command_id (campos extra) para poder reaplicarla
@@ -121,6 +122,8 @@ export async function issue(
     origin: 'api',
     command_id: commandId,
   });
+  // Bajó el disponible: puede quedar bajo su mínimo.
+  await recomputeSuggestion(db, input.part_id);
   return movement;
 }
 
@@ -204,6 +207,7 @@ export async function count(db: Db, input: CountInput): Promise<{ part_id: numbe
       command_id: commandId,
     });
     adjustments.push({ part_id: line.part_id, delta });
+    await recomputeSuggestion(db, line.part_id);
   }
   return adjustments;
 }

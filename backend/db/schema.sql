@@ -192,7 +192,10 @@ CREATE TABLE IF NOT EXISTS reorder_suggestions (
   updated_at         timestamptz NOT NULL DEFAULT now()
 );
 
--- Extra: políticas mínimo/máximo por pieza.
+-- Motivo de la sugerencia: shortage, below_min o shortage_and_min.
+ALTER TABLE reorder_suggestions ADD COLUMN IF NOT EXISTS reason text;
+
+-- Extra: políticas mínimo/máximo por pieza (también en backend/data/policies.json).
 CREATE TABLE IF NOT EXISTS policies (
   part_id        integer PRIMARY KEY,
   min_qty        integer,
