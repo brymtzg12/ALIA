@@ -30,3 +30,12 @@ pnpm dev                  # API en http://localhost:8000
 # 3. Pruebas de contrato (desde hackathon-inventario-kit)
 docker compose run --rm contract-tests --api http://host.docker.internal:8000
 ```
+
+## Frontend
+Desde la rama frontend:
+    cd frontend
+    npm ci
+    npm run dev
+Abre https://localhost:5173 con el backend encendido en el puerto 8000.
+Para un celular, usa https://<IP-de-la-laptop>:5173 en la misma red.
+Consulta frontend/README.md para pantallas, validación y prueba de integración.
