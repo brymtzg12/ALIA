@@ -17,7 +17,18 @@ export const consumerState = {
   startupHighs: null as Map<string, Map<number, number>> | null,
   // Último offset procesado por "topic|partition" (para el lag en /health).
   processedOffsets: new Map<string, number>(),
+  // Cada arranque de los consumidores tiene su número; lo de un arranque viejo se ignora.
+  generation: 0,
 };
+
+/** Deja el estado en blanco (antes de reiniciar los consumidores sobre una base nueva). */
+export function resetConsumerState() {
+  consumerState.groupPrefix = '';
+  consumerState.catalogReady = false;
+  consumerState.rebuilding = false;
+  consumerState.startupHighs = null;
+  consumerState.processedOffsets = new Map();
+}
 
 const RETRY_AFTER = new Set(['shop.catalog', 'shop.work_orders']);
 
@@ -57,7 +68,8 @@ async function runConsumer(groupId: string, topics: string[], runOpts: Record<st
 
   const start = async () => {
     // Sesión corta: al reiniciar en desarrollo, el miembro anterior se descarta en 10 s, no en 30.
-    const consumer = kafka.consumer({ groupId, sessionTimeout: 10000, heartbeatInterval: 3000 });
+    // Nunca crear tópicos al suscribirse: si faltan, se espera a que el kit los cree (con 3 particiones).
+    const consumer = kafka.consumer({ groupId, sessionTimeout: 10000, heartbeatInterval: 3000, allowAutoTopicCreation: false });
     current = consumer;
     consumer.on(consumer.events.CRASH, async (e: any) => {
       if (e.payload?.restart || stopped) return;
@@ -81,7 +93,9 @@ async function runConsumer(groupId: string, topics: string[], runOpts: Record<st
   };
 }
 
-export async function startConsumers(instanceId: string) {
+export async function startConsumers(instanceId: string, generation = ++consumerState.generation) {
+  consumerState.generation = generation;
+  const current = () => consumerState.generation === generation;
   consumerState.groupPrefix = `kitlisto-${instanceId}`;
   await admin.connect();
 
@@ -103,6 +117,7 @@ export async function startConsumers(instanceId: string) {
       .then(() => replayApiFacts(consumerState.groupPrefix, outputHighs))
       .catch((err) => console.error('[kafka] error al reaplicar los hechos de la API:', err))
       .finally(() => {
+        if (!current()) return; // los consumidores se reiniciaron mientras tanto
         consumerState.rebuilding = false;
         setSuppressPublishing(false);
         console.log('[kafka] reconstrucción terminada: se publican las salidas nuevas');

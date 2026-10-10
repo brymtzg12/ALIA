@@ -15,6 +15,12 @@ export const stats: Record<Outcome, number> & { lastProcessedAt: string | null; 
 
 const MAX_ATTEMPTS = 3;
 
+export function resetStats() {
+  for (const k of ['ok', 'ignored', 'duplicate', 'parked', 'invalid', 'unknown_type', 'error'] as const) stats[k] = 0;
+  stats.lastProcessedAt = null;
+  stats.lastEventId = null;
+}
+
 type Message = { topic: string; key: string | null; value: string | object };
 
 /** Procesa un mensaje recién llegado. Nunca lanza: lo que no se puede procesar va a la DLQ. */

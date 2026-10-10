@@ -1,5 +1,6 @@
 import express from 'express';
-import { HttpError } from './errors.ts';
+import { pausePipeline, resetPipeline } from '../pipeline.ts';
+import { conflict, HttpError } from './errors.ts';
 import { getHealth } from './health.ts';
 import { ledgerRoutes } from './ledgerRoutes.ts';
 import { workRoutes } from './workRoutes.ts';
@@ -22,6 +23,33 @@ export function createApp() {
 
   app.get('/health', async (_req: any, res: any) => {
     res.json(await getHealth(streamClientCount()));
+  });
+
+  // Reconstrucción desde cero en caliente (para dejar la demo limpia). Solo desde la misma
+  // máquina y con confirmación explícita: borra la base y vuelve a leer los tópicos.
+  const localOnly = (req: any) => {
+    const ip = String(req.socket?.remoteAddress ?? '');
+    if (!['127.0.0.1', '::1', '::ffff:127.0.0.1'].includes(ip)) throw new HttpError(403, 'Solo se permite desde la misma máquina');
+    if (req.body?.confirm !== 'RESET') throw new HttpError(422, 'Falta confirmar: envía { "confirm": "RESET" }');
+  };
+  // Pausa los consumidores antes de que el kit borre sus tópicos (si siguen conectados, Kafka
+  // recrea los tópicos al instante y el simulador falla al crearlos).
+  app.post('/admin/pause', async (req: any, res: any) => {
+    localOnly(req);
+    try {
+      await pausePipeline();
+      res.json({ status: 'pausado' });
+    } catch (err: any) {
+      throw conflict(err.message);
+    }
+  });
+  app.post('/admin/reset', async (req: any, res: any) => {
+    localOnly(req);
+    try {
+      res.json({ status: 'reconstruyendo', ...(await resetPipeline()) });
+    } catch (err: any) {
+      throw conflict(err.message);
+    }
   });
 
   app.use(ledgerRoutes);

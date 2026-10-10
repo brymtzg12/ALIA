@@ -14,7 +14,8 @@
     "migrate": "node --env-file=.env src/scripts/migrate.ts",
     "reset": "node --env-file=.env src/scripts/migrate.ts --reset",
     "check:contract": "node --env-file=.env src/scripts/check-contract.ts",
-    "replay": "node --env-file=.env src/replay/file.ts"
+    "replay": "node --env-file=.env src/replay/file.ts",
+    "demo:reset": "node --env-file=.env src/scripts/demo-reset.ts"
   },
   "dependencies": {
     "ajv": "8.17.1",

@@ -21,7 +21,7 @@ async function readApiFacts(groupId: string, highs: Map<number, number>): Promis
   const catchUp = new CatchUp(new Map([[OUTPUT_TOPIC, highs]]));
   if (catchUp.isDone) return facts;
 
-  const consumer = kafka.consumer({ groupId, sessionTimeout: 10000, heartbeatInterval: 3000 });
+  const consumer = kafka.consumer({ groupId, sessionTimeout: 10000, heartbeatInterval: 3000, allowAutoTopicCreation: false });
   await consumer.connect();
   await consumer.subscribe({ topics: [OUTPUT_TOPIC], fromBeginning: true });
   await consumer.run({
