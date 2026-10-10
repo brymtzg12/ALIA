@@ -78,3 +78,8 @@
 .explanation {
   min-width: 280px;
 }
+
+.codeInput {
+  font-family: var(--mantine-font-family-monospace);
+  letter-spacing: 0.04em;
+}

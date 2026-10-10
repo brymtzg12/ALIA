@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Alert, Badge, Button, Card, Group, Select, SimpleGrid, Stack, Title, Text } from '@mantine/core';
-import { useParams } from 'react-router-dom';
+import { Alert, Badge, Button, Card, Group, Select, SimpleGrid, Stack, TextInput, Title, Text } from '@mantine/core';
+import { useNavigate, useParams } from 'react-router-dom';
 import { useApi, type List, type Row } from '../api';
 import { DataTable, QueryState, StatusBadge } from '../components/DataView';
 import { Code, EmptyState, PageHeader, Section, Stat } from '../components/Ui';
@@ -8,7 +8,16 @@ import pages from './Pages.module.css';
 import { groupMaterials } from '../materialLogic';
 export function Ordenes() {
   const query = useApi<List>('/work-orders?status=open');
-  return <><PageHeader eyebrow="Almacén" title="Órdenes abiertas" /><QueryState query={query} />{query.data && <DataTable rows={query.data.items} columns={[['code', 'Orden'], ['model_name', 'Modelo'], ['stage', 'Etapa'], ['lines_total', 'Materiales'], ['lines_complete', 'Completos'], ['missing_total', 'Faltantes'], ['kit_complete', 'Kit completo']]} />}</>;
+  const [search, setSearch] = useState('');
+  const navigate = useNavigate();
+  const term = search.trim().toUpperCase();
+  const rows = (query.data?.items ?? []).filter(row => !term || String(row.code).toUpperCase().includes(term) || String(row.model_name ?? '').toUpperCase().includes(term));
+  return <><PageHeader eyebrow="Almacén" title="Órdenes de trabajo" />
+    <form className={pages.toolbar} onSubmit={event => { event.preventDefault(); if (term) navigate('/ordenes/' + encodeURIComponent(term)); }}>
+      <TextInput className={pages.search} label="Buscar orden por código" description="Abre cualquier orden, también las liberadas o dadas de baja." placeholder="Ej. R240826000" classNames={{ input: pages.codeInput }} value={search} onChange={event => setSearch(event.currentTarget.value)} />
+      <Button type="submit" disabled={!term}>Ver orden</Button>
+    </form>
+    <Section title="Órdenes abiertas"><QueryState query={query} />{query.data && <DataTable rows={rows} columns={[['code', 'Orden'], ['model_name', 'Modelo'], ['stage', 'Etapa'], ['lines_total', 'Materiales'], ['lines_complete', 'Completos'], ['missing_total', 'Faltantes'], ['kit_complete', 'Kit completo']]} />}</Section></>;
 }
 export function Materiales() {
   const { code } = useParams();
