@@ -275,8 +275,8 @@ de `/api` al backend del puerto 8000, incluidos los avisos en vivo. El backend d
 | Operación de piso | Retirar piezas | `/piso/retirar` | Escanear ubicación, pieza y orden y registrar la salida |
 | | Transferir piezas | `/piso/transferir` | Mover piezas de una ubicación a otra |
 | | Contar piezas | `/piso/contar` | Conteo físico de una ubicación y ajustes |
-| Almacén | Almacén | `/almacen` | Resumen, faltantes abiertos, sugerencias de compra e inventario |
-| | Órdenes de trabajo | `/ordenes` | Órdenes abiertas y sus materiales agrupados por kit |
+| Almacén | Almacén | `/almacen` | Resumen, faltantes abiertos, sugerencias de compra, inventario por pieza y existencias por ubicación |
+| | Órdenes de trabajo | `/ordenes` | Búsqueda de cualquier orden por código y lista de abiertas; cada orden muestra lo reservado, entregado y pendiente por kit |
 | | Recepciones | `/recepciones` | Compras que no se pudieron relacionar con una pieza |
 | Planeación | Pronóstico | `/pronostico` | Demanda esperada por modelo a partir de inspecciones aprobadas |
 | | Políticas | `/politicas` | Mínimos y máximos por pieza y recomendaciones |
