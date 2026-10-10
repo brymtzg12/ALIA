@@ -367,6 +367,7 @@ Las rutas principales:
 | No llegan avisos en vivo | Revisa http://localhost:8000/stream y que el kit de Roceel esté arriba |
 | La cámara no abre | Entra por **https** y permite la cámara en el navegador; mientras, escribe el código a mano |
 | El celular no abre la página o queda en negro | Ver la tabla *Si el celular no carga* en *Verlo en el celular* |
+| En Windows, `http://localhost:8000` se queda cargando | Docker Desktop (WSL) puede dejar ocupado el puerto en IPv6. Usa `http://127.0.0.1:8000`; la app, el celular y las pruebas de contrato (`host.docker.internal`) no se ven afectados |
 | El puerto 5173 está ocupado | Ya hay otro `pnpm dev` corriendo; ciérralo o usa ese |
 | Datos raros o de prueba | `pnpm demo:reset` en `backend/` |
 
